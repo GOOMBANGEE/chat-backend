@@ -7,6 +7,7 @@ import com.chat.repository.user.UserRoleRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -36,5 +37,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         .map(UserRole::createGrantedAuthorities).toList();
 
     return user.buildUserDetails(grantedAuthorities);
+  }
+
+  // 인증 유저정보 가져오기 username == email
+  public String getEmailByUserDetails() {
+    UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
+        .getPrincipal();
+    return principal.getUsername();
   }
 }

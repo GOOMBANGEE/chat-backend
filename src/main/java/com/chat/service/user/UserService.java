@@ -35,7 +35,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
 
+  private final CustomUserDetailsService customUserDetailsService;
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
   private final UserTempRepository userTempRepository;
@@ -68,12 +68,6 @@ public class UserService {
   @Value("${server.front-url}")
   private String frontUrl;
 
-  // 인증 유저정보 가져오기 username == email
-  private String getEmailByUserDetails() {
-    UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
-        .getPrincipal();
-    return principal.getUsername();
-  }
 
   // 가입시 해당 이메일로 가입된 유저가 있는지 체크
   public Boolean validEmailDuplicate(String email) {
@@ -234,7 +228,7 @@ public class UserService {
 
   // 사용자정보 fetch
   public ProfileResponseDto profile() {
-    String email = getEmailByUserDetails();
+    String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     return user.buildProfileResponseDto();
@@ -322,7 +316,7 @@ public class UserService {
   // 비밀번호 재설정
   @Transactional
   public void resetPassword(ResetPasswordRequestDto resetPasswordRequestDto) {
-    String email = getEmailByUserDetails();
+    String email = customUserDetailsService.getEmailByUserDetails();
     String prevPassword = resetPasswordRequestDto.getPrevPassword();
     String newPassword = passwordEncoder.encode(resetPasswordRequestDto.getNewPassword());
 
@@ -340,7 +334,7 @@ public class UserService {
   // 사용자명 재설정
   @Transactional
   public void resetUsername(ResetUsernameRequestDto requestDto) {
-    String email = getEmailByUserDetails();
+    String email = customUserDetailsService.getEmailByUserDetails();
     String username = requestDto.getUsername();
     // 유저검색
     User user = userRepository.findByEmail(email)
@@ -357,7 +351,7 @@ public class UserService {
   // 유저 삭제
   @Transactional
   public void userDelete() {
-    String email = getEmailByUserDetails();
+    String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     user.userDelete();

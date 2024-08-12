@@ -34,6 +34,7 @@ import com.chat.repository.user.UserRoleRepository;
 import com.chat.repository.user.UserTempRepository;
 import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
+import com.chat.service.user.CustomUserDetailsService;
 import com.chat.service.user.UserService;
 import com.chat.util.UUIDGenerator;
 import java.time.LocalDateTime;
@@ -59,6 +60,8 @@ class UserServiceTest {
   @InjectMocks
   private UserService userService;
 
+  @Mock
+  private CustomUserDetailsService customUserDetailsService;
   @Mock
   private MailService mailService;
 
@@ -150,10 +153,7 @@ class UserServiceTest {
   }
 
   void testUserDetails() {
-    SecurityContextHolder.setContext(securityContext);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
-    when(authentication.getPrincipal()).thenReturn(userDetails);
-    when(userDetails.getUsername()).thenReturn(testEmail);
+    when(customUserDetailsService.getEmailByUserDetails()).thenReturn(testEmail);
   }
 
   @Test
@@ -846,9 +846,7 @@ class UserServiceTest {
     // given
     String email = "test2@test.com";
     SecurityContextHolder.setContext(securityContext);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
-    when(authentication.getPrincipal()).thenReturn(userDetails);
-    when(userDetails.getUsername()).thenReturn(email);
+    when(customUserDetailsService.getEmailByUserDetails()).thenReturn(email);
 
     User user = User.builder()
         .email(email)
