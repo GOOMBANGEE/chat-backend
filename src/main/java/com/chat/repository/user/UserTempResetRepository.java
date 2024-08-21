@@ -4,7 +4,9 @@ import com.chat.domain.user.User;
 import com.chat.domain.user.UserTempReset;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface UserTempResetRepository extends JpaRepository<UserTempReset, Long> {
 
   Optional<UserTempReset> findByUser(User user);
