@@ -1,5 +1,6 @@
 package com.chat.dto.server;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -7,15 +8,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ServerCreateRequestDto {
+public class ServerListResponseDto {
 
-  private String username;
-
-  private String name;
+  private List<ServerInfoDto> serverList;
 
   @Builder
-  public ServerCreateRequestDto(String username, String name) {
-    this.username = username;
-    this.name = name;
+  public ServerListResponseDto(List<ServerInfoDto> serverList) {
+    this.serverList = serverList;
   }
 }

@@ -67,12 +67,20 @@ public class GlobalExceptionHandler {
     return ValidExceptionHandler.handleMethodArgumentNotValidException(errorMessage);
   }
 
+  @ExceptionHandler(ServerException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponseDto handleServerException(ServerException e, HttpServletRequest request) {
+    configureSentryScope(e.getId(), request);
+    log.debug("SERVER_ERROR : {}", e.getId());
+    return e.handleException();
+  }
+
   @ExceptionHandler(UserException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ErrorResponseDto handleUserException(UserException e, HttpServletRequest request) {
     configureSentryScope(e.getId(), request);
     log.debug("USER_ERROR : {}", e.getId());
-    return e.handleUserException();
+    return e.handleException();
   }
 
   @ExceptionHandler(MailException.class)
@@ -80,7 +88,7 @@ public class GlobalExceptionHandler {
   public ErrorResponseDto handleMailException(MailException e, HttpServletRequest request) {
     configureSentryScope(e.getId(), request);
     log.debug("MAIL_ERROR : {}", e.getId());
-    return e.handleMailException();
+    return e.handleException();
   }
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

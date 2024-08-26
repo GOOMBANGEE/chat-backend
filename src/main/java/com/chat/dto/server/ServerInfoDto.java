@@ -1,5 +1,6 @@
 package com.chat.dto.server;
 
+import com.querydsl.core.annotations.QueryProjection;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -7,15 +8,16 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ServerCreateRequestDto {
+public class ServerInfoDto {
 
-  private String username;
+  private Long id;
 
   private String name;
 
+  @QueryProjection
   @Builder
-  public ServerCreateRequestDto(String username, String name) {
-    this.username = username;
+  public ServerInfoDto(Long id, String name) {
+    this.id = id;
     this.name = name;
   }
 }

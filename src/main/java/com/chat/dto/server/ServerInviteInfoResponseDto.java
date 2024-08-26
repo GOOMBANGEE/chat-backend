@@ -7,15 +7,18 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ServerCreateRequestDto {
-
-  private String username;
+public class ServerInviteInfoResponseDto {
 
   private String name;
 
+  private String username;
+
+  private Long userCount;
+
   @Builder
-  public ServerCreateRequestDto(String username, String name) {
-    this.username = username;
+  public ServerInviteInfoResponseDto(String name, String username, Long userCount) {
     this.name = name;
+    this.username = username;
+    this.userCount = userCount;
   }
 }
