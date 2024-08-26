@@ -10,7 +10,7 @@ public class MailException extends RuntimeException {
 
   private final String id;
 
-  public ErrorResponseDto handleMailException() {
+  public ErrorResponseDto handleException() {
     if (this.id.equals("MAIL:SEND_MAIL_FAIL")) {
       return ErrorResponseDto.build(id, "메일 발송중 오류가 발생했습니다");
     }
