@@ -2,6 +2,7 @@ package com.chat.service.user;
 
 import com.chat.domain.user.User;
 import com.chat.domain.user.UserRole;
+import com.chat.exception.UserException;
 import com.chat.repository.user.UserRepository;
 import com.chat.repository.user.UserRoleRepository;
 import java.util.List;
@@ -22,6 +23,8 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
 
+  private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
+
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
     return userRepository.findByEmail(email)
@@ -41,8 +44,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   // 인증 유저정보 가져오기 username == email
   public String getEmailByUserDetails() {
-    UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
-        .getPrincipal();
+    UserDetails principal;
+    try {
+      principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
+          .getPrincipal();
+    } catch (ClassCastException e) {
+      throw new UserException(USER_UNREGISTERED);
+    }
+    
     return principal.getUsername();
   }
 }

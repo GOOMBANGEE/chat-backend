@@ -138,7 +138,7 @@ public class UserService {
         .user(user)
         .build();
 
-    String verificationLink = frontUrl + "/user/register/" + token;
+    String verificationLink = frontUrl + "/register/confirm/" + token;
     mailService.sendEmail(email, "이메일 인증 메일 입니다", verificationLink);
 
     roleRepository.save(role);
@@ -156,7 +156,7 @@ public class UserService {
 
     // 이메일 재발송을 위한 토큰
     String token = userTemp.tokenForResend();
-    String verificationLink = frontUrl + "/user/register/" + token;
+    String verificationLink = frontUrl + "/register/confirm/" + token;
 
     mailService.sendEmail(email, "이메일 인증 메일 입니다", verificationLink);
   }
@@ -266,7 +266,7 @@ public class UserService {
     }
 
     // 이메일 발송
-    String recoverUrl = frontUrl + "/user/recover/" + token;
+    String recoverUrl = frontUrl + "/recover/" + token;
     mailService.sendEmail(email, "비밀번호 초기화 링크입니다", recoverUrl);
   }
 
@@ -277,7 +277,7 @@ public class UserService {
     UserTempReset userTempReset = userTempResetRepository.findByUser(user)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     String token = userTempReset.tokenForResend();
-    String verificationLink = frontUrl + "/user/recover/" + token;
+    String verificationLink = frontUrl + "/recover/" + token;
     mailService.sendEmail(email, "비밀번호 초기화 링크입니다", verificationLink);
   }
 

@@ -11,7 +11,7 @@ public class UserException extends RuntimeException {
 
   private final String id;
 
-  public ErrorResponseDto handleUserException() {
+  public ErrorResponseDto handleException() {
     return switch (this.id) {
       case "USER:TOKEN_INVALID" -> ErrorResponseDto.build(id, "토큰이 유효하지 않습니다");
       case "USER:EMAIL_EXIST" -> ErrorResponseDto.build(id, "이미 존재하는 이메일입니다");
