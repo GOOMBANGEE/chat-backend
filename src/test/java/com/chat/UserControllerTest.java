@@ -29,6 +29,7 @@ import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
 import com.chat.dto.user.ResetPasswordRequestDto;
 import com.chat.dto.user.ResetUsernameRequestDto;
+import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.dto.user.UsernameCheckRequestDto;
 import com.chat.exception.GlobalExceptionHandler;
 import com.chat.exception.UserException;
@@ -786,7 +787,10 @@ class UserControllerTest {
   @Test
   void testUserDelete_USER_UNREGISTERED() throws Exception {
     // given
-    doThrow(new UserException(USER_UNREGISTERED)).when(userService).userDelete();
+    UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
+        .password(testPassword)
+        .build();
+    doThrow(new UserException(USER_UNREGISTERED)).when(userService).userDelete(requestDto);
 
     // when
     ResultActions actions = mockMvc.perform(delete("/api/user/delete"));
@@ -795,6 +799,24 @@ class UserControllerTest {
     actions
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.id").value(USER_UNREGISTERED))
+        .andDo(print());
+  }
+
+  @Test
+  void testUserDelete_PASSWORD_MISMATCH() throws Exception {
+    // given
+    UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
+        .password(testPassword)
+        .build();
+    doThrow(new UserException(PASSWORD_MISMATCH)).when(userService).userDelete(requestDto);
+
+    // when
+    ResultActions actions = mockMvc.perform(delete("/api/user/delete"));
+
+    // then
+    actions
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.id").value(PASSWORD_MISMATCH))
         .andDo(print());
   }
 }

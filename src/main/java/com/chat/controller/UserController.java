@@ -17,6 +17,7 @@ import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
 import com.chat.dto.user.ResetPasswordRequestDto;
 import com.chat.dto.user.ResetUsernameRequestDto;
+import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.dto.user.UsernameCheckRequestDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
@@ -25,7 +26,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -120,8 +120,8 @@ public class UserController {
   // 사용자정보 fetch
   @GetMapping("/profile")
   public ResponseEntity<ProfileResponseDto> profile() {
-    ProfileResponseDto profileResponseDto = userService.profile();
-    return ResponseEntity.ok(profileResponseDto);
+    ProfileResponseDto responseDto = userService.profile();
+    return ResponseEntity.ok(responseDto);
   }
 
   // 비밀번호 분실히 비밀번호 찾기
@@ -147,38 +147,38 @@ public class UserController {
       @NotNull(message = TOKEN_INVALID)
       @PathVariable("token")
       String token) {
-    RecoverTokenCheckResponseDto recoverTokenCheckResponseDto = userService.recoverTokenCheck(
-        token);
-    return ResponseEntity.ok(recoverTokenCheckResponseDto);
+    RecoverTokenCheckResponseDto responseDto = userService.recoverTokenCheck(token);
+    return ResponseEntity.ok(responseDto);
   }
 
   // 비밀번호 복구 재설정
   @PostMapping("/recover/confirm")
   public ResponseEntity<EmptyResponseDto> recoverConfirm(
-      @RequestBody @Valid RecoverConfirmRequestDto recoverConfirmRequestDto) {
-    userService.recoverConfirm(recoverConfirmRequestDto);
+      @RequestBody @Valid RecoverConfirmRequestDto requestDto) {
+    userService.recoverConfirm(requestDto);
     return ResponseEntity.ok(null);
   }
 
   // 비밀번호 재설정
   @PostMapping("/reset/password")
   public ResponseEntity<EmptyResponseDto> resetPassword(
-      @RequestBody @Valid ResetPasswordRequestDto resetPasswordRequestDto) {
-    userService.resetPassword(resetPasswordRequestDto);
+      @RequestBody @Valid ResetPasswordRequestDto requestDto) {
+    userService.resetPassword(requestDto);
     return ResponseEntity.ok(null);
   }
 
   // 사용자명 재설정
   @PostMapping("/reset/username")
   public ResponseEntity<EmptyResponseDto> resetUsername(
-      @RequestBody @Valid ResetUsernameRequestDto resetUsernameRequestDto) {
-    userService.resetUsername(resetUsernameRequestDto);
+      @RequestBody @Valid ResetUsernameRequestDto requestDto) {
+    userService.resetUsername(requestDto);
     return ResponseEntity.ok(null);
   }
 
-  @DeleteMapping("/delete")
-  public ResponseEntity<EmptyResponseDto> userDelete() {
-    userService.userDelete();
+  @PostMapping("/delete")
+  public ResponseEntity<EmptyResponseDto> userDelete(
+      @RequestBody @Valid UserDeleteRequestDto requestDto) {
+    userService.userDelete(requestDto);
     return ResponseEntity.ok(null);
   }
 }

@@ -16,6 +16,7 @@ import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
 import com.chat.dto.user.ResetPasswordRequestDto;
 import com.chat.dto.user.ResetUsernameRequestDto;
+import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
@@ -350,11 +351,19 @@ public class UserService {
 
   // 유저 삭제
   @Transactional
-  public void userDelete() {
+  public void userDelete(UserDeleteRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
+
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    user.userDelete();
-    userRepository.delete(user);
+
+    String password = requestDto.getPassword();
+    if (user.checkPassword(password, passwordEncoder)) {
+      user.userDelete();
+      userRepository.delete(user);
+      return;
+    }
+    throw new UserException(PASSWORD_MISMATCH);
+
   }
 }

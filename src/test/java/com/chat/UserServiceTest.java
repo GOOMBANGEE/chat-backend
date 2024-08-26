@@ -26,6 +26,7 @@ import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
 import com.chat.dto.user.ResetPasswordRequestDto;
 import com.chat.dto.user.ResetUsernameRequestDto;
+import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.repository.user.RoleRepository;
@@ -875,12 +876,17 @@ class UserServiceTest {
   @Test
   void userDelete_SUCCESS() {
     // given
+    UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
+        .password(testPassword)
+        .build();
     testUserDetails();
     String email = testEmail;
+    String password = requestDto.getPassword();
     when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(testUser.checkPassword(password, passwordEncoder)).thenReturn(true);
 
     // when
-    userService.userDelete();
+    userService.userDelete(requestDto);
 
     // then
     verify(userRepository, times(1)).delete(testUser);
@@ -889,15 +895,38 @@ class UserServiceTest {
   @Test
   void userDelete_USER_UNREGISTERED() {
     // given
+    UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
+        .password(testPassword)
+        .build();
     testUserDetails();
     String email = testEmail;
     when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
-        () -> userService.userDelete());
+        () -> userService.userDelete(requestDto));
 
     // then
     assertEquals(USER_UNREGISTERED, exception.getId());
+  }
+
+  @Test
+  void userDelete_PASSWORD_MISMATCH() {
+    // given
+    UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
+        .password(testDiffPassword)
+        .build();
+    testUserDetails();
+    String email = testEmail;
+    String password = requestDto.getPassword();
+    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(testUser.checkPassword(password, passwordEncoder)).thenReturn(false);
+
+    // when
+    UserException exception = assertThrows(UserException.class,
+        () -> userService.userDelete(requestDto));
+
+    // then
+    assertEquals(PASSWORD_MISMATCH, exception.getId());
   }
 }
