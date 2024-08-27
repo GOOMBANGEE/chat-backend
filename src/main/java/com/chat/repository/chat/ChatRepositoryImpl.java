@@ -22,7 +22,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   @Override
   public List<ChatInfoDto> fetchChatInfoDtoListByServerId(Long serverId) {
     return queryFactory
-        .select(new QChatInfoDto(chat.id, chat.username, chat.message))
+        .select(new QChatInfoDto(chat.id, chat.user.username, chat.message))
         .from(chat)
         .where(serverIdEq(serverId))
         .orderBy(chat.id.desc())

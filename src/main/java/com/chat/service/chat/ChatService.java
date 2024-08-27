@@ -39,7 +39,6 @@ public class ChatService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     Long serverId = messageDto.getServerId();
-    String username = messageDto.getUsername();
     String message = messageDto.getMessage();
 
     // 해당 서버 참여자인지 확인
@@ -56,7 +55,6 @@ public class ChatService {
         .message(message)
         .server(server)
         .user(user)
-        .username(username)
         .build();
     chatRepository.save(chat);
 
@@ -85,7 +83,7 @@ public class ChatService {
     if (serverUserRelationRepository.findServerByUserAndServerId(user, serverId).isEmpty()) {
       throw new ServerException(SERVER_NOT_FOUND);
     }
-    
+
     // 최근 50개 fetch
     List<ChatInfoDto> chatInfoDtoList = chatRepository.fetchChatInfoDtoListByServerId(serverId);
 

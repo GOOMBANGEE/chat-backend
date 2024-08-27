@@ -73,6 +73,7 @@ public class ServerService {
     Long id = server.getServerIdForServerCreateResponse();
     return ServerCreateResponseDto.builder()
         .id(id)
+        .name(name)
         .build();
   }
 
