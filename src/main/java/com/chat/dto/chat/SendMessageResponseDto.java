@@ -1,4 +1,4 @@
-package com.chat.dto.server;
+package com.chat.dto.chat;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -7,12 +7,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ServerCreateResponseDto {
+public class SendMessageResponseDto {
+
+  private Long serverId;
 
   private Long id;
 
   @Builder
-  public ServerCreateResponseDto(Long id) {
+  public SendMessageResponseDto(Long serverId, Long id) {
+    this.serverId = serverId;
     this.id = id;
   }
 }

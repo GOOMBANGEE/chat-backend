@@ -1,5 +1,7 @@
 package com.chat.config;
 
+import java.util.List;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,15 +14,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-  @Value("${server.front-url}")
-  private String frontUrl;
+  @Value("#{'${server.cors-urls}'.split(',')}")
+  private List<String> corsUrlList;
 
   @Override
-  public void addCorsMappings(CorsRegistry registry) {
-    registry.addMapping("/api/**")
-        .allowedOrigins(frontUrl)
-        .allowedMethods("GET", "POST", "PUT", "DELETE")
-        .allowCredentials(true);
+  public void addCorsMappings(@NonNull CorsRegistry registry) {
+    for (String url : corsUrlList) {
+      registry.addMapping("/**")
+          .allowedOrigins(url)
+          .allowedMethods("GET", "POST", "PUT", "DELETE")
+          .allowCredentials(true);
+    }
   }
 
   @Bean
@@ -28,7 +32,9 @@ public class WebConfig implements WebMvcConfigurer {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowCredentials(true);
-    config.addAllowedOrigin(frontUrl);
+    for (String url : corsUrlList) {
+      config.addAllowedOrigin(url);
+    }
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     source.registerCorsConfiguration("/**", config);

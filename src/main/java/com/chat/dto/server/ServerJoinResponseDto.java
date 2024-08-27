@@ -7,15 +7,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ServerCreateRequestDto {
+public class ServerJoinResponseDto {
 
-  private String username;
-
-  private String name;
+  private Long serverId;
 
   @Builder
-  public ServerCreateRequestDto(String username, String name) {
-    this.username = username;
-    this.name = name;
+  public ServerJoinResponseDto(Long serverId) {
+    this.serverId = serverId;
   }
 }
