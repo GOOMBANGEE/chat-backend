@@ -60,7 +60,7 @@ public class ServerService {
   public ServerCreateResponseDto create(ServerCreateRequestDto requestDto) {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // 서버 생성
@@ -94,7 +94,7 @@ public class ServerService {
   public ServerListResponseDto list() {
     // 해당 유저가 속한 서버 리턴
     String email = customUserDetailsService.getEmailByUserDetails();
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository.fetchServerInfoDtoListByUser(
@@ -112,7 +112,7 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
@@ -153,7 +153,7 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
@@ -184,7 +184,7 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
@@ -205,7 +205,7 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // todo role check
@@ -259,7 +259,7 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)

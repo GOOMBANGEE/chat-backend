@@ -37,14 +37,17 @@ public class User {
 
   private boolean activated;
 
+  private boolean logicDelete;
+
   @Builder
   public User(String email, String username, String password, LocalDateTime registerDate,
-      boolean activated) {
+      boolean activated, boolean logicDelete) {
     this.email = email;
     this.username = username;
     this.password = password;
     this.registerDate = registerDate;
     this.activated = activated;
+    this.logicDelete = logicDelete;
   }
 
   public org.springframework.security.core.userdetails.User buildUserDetails(
@@ -102,8 +105,7 @@ public class User {
   }
 
   // 유저 삭제
-  public void userDelete() {
-    // TODO
-    // 연관관계 모두 찾아서 삭제
+  public void logicDelete() {
+    this.logicDelete = true;
   }
 }

@@ -44,7 +44,7 @@ public class ChatService {
     String message = messageDto.getMessage();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // todo role check
@@ -83,7 +83,7 @@ public class ChatService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // todo role check
@@ -114,7 +114,7 @@ public class ChatService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // todo role check
@@ -136,7 +136,7 @@ public class ChatService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
     // todo role check

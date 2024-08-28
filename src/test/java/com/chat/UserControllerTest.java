@@ -774,7 +774,7 @@ class UserControllerTest {
   }
 
   @Test
-  void testUserDelete_SUCCESS() throws Exception {
+  void testLogicDelete_SUCCESS() throws Exception {
     // when
     ResultActions actions = mockMvc.perform(delete("/api/user/delete"));
 
@@ -785,7 +785,7 @@ class UserControllerTest {
   }
 
   @Test
-  void testUserDelete_USER_UNREGISTERED() throws Exception {
+  void testLogicDelete_USER_UNREGISTERED() throws Exception {
     // given
     UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
         .password(testPassword)
@@ -803,7 +803,7 @@ class UserControllerTest {
   }
 
   @Test
-  void testUserDelete_PASSWORD_MISMATCH() throws Exception {
+  void testLogicDelete_PASSWORD_MISMATCH() throws Exception {
     // given
     UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
         .password(testPassword)

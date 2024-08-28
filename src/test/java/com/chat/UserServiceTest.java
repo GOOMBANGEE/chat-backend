@@ -161,7 +161,7 @@ class UserServiceTest {
   void testValidEmailDuplicate_SUCCESS() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     Boolean result = userService.validEmailDuplicate(testEmail);
@@ -175,7 +175,7 @@ class UserServiceTest {
   void testValidEmailDuplicate_EMAIL_EXIST() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -189,7 +189,7 @@ class UserServiceTest {
   void testValidUsernameDuplicate_SUCCESS() {
     // given
     String username = testUsername;
-    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+    when(userRepository.findByUsernameAndLogicDeleteFalse(username)).thenReturn(Optional.empty());
 
     // when
     Boolean result = userService.validUsernameDuplicate(testUsername);
@@ -202,7 +202,8 @@ class UserServiceTest {
   void testValidUsernameDuplicate_USERNAME_EXIST() {
     // given
     String username = testUsername;
-    when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByUsernameAndLogicDeleteFalse(username)).thenReturn(
+        Optional.of(testUser));
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -224,7 +225,7 @@ class UserServiceTest {
     String email = requestDto.getEmail();
     String username = requestDto.getUsername();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
     when(userRepository.save(any(User.class))).thenReturn(testUser);
 
     when(uuidGenerator.generateUUID()).thenReturn(testToken);
@@ -234,7 +235,7 @@ class UserServiceTest {
     userService.register(requestDto);
 
     // then
-    Optional<User> registeredUser = userRepository.findByEmail(email);
+    Optional<User> registeredUser = userRepository.findByEmailAndLogicDeleteFalse(email);
     assertAll(
         () -> verify(roleRepository, times(1)).save(any(Role.class)),
         () -> verify(userRepository, times(1)).save(any(User.class)),
@@ -269,7 +270,7 @@ class UserServiceTest {
     String email = testEmail;
     String expectedVerificationLink = frontUrl + "/user/register/" + testToken;
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempRepository.findByUser(testUser)).thenReturn(Optional.of(testUserTemp));
 
     // when
@@ -283,7 +284,7 @@ class UserServiceTest {
   void testRegisterEmailSend_USER_UNREGISTERED() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -297,7 +298,7 @@ class UserServiceTest {
   void testRegisterEmailSend_UserTempNotExist() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempRepository.findByUser(testUser)).thenReturn(Optional.empty());
 
     // when
@@ -345,7 +346,8 @@ class UserServiceTest {
     String token = requestDto.getToken();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUserNotActivated));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(
+        Optional.of(testUserNotActivated));
     when(userTempRepository.findByToken(token)).thenReturn(Optional.of(testUserTemp));
 
     // when
@@ -366,7 +368,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -386,7 +388,7 @@ class UserServiceTest {
     String token = requestDto.getToken();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempRepository.findByToken(token)).thenReturn(Optional.empty());
 
     // when
@@ -406,7 +408,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
 
     when(authenticationManagerBuilder.getObject()).thenReturn(authenticationManager);
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
@@ -432,7 +434,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -451,7 +453,8 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUserNotActivated));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(
+        Optional.of(testUserNotActivated));
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -470,7 +473,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -485,7 +488,7 @@ class UserServiceTest {
     // given
     testUserDetails();
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
 
     // when
     ProfileResponseDto profile = userService.profile();
@@ -500,7 +503,7 @@ class UserServiceTest {
     // given
     testUserDetails();
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -518,7 +521,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByUser(testUser)).thenReturn(Optional.of(testUserTempReset));
 
     String expectedVerificationLink = frontUrl + "/user/recover/" + testToken;
@@ -538,7 +541,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByUser(testUser)).thenReturn(
         Optional.empty());
 
@@ -561,7 +564,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     userService.recover(requestDto);
@@ -574,7 +577,7 @@ class UserServiceTest {
   void recoverEmailSend_SUCCESS() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByUser(testUser)).thenReturn(Optional.of(testUserTempReset));
 
     String expectedVerificationLink = frontUrl + "/user/recover/" + testToken;
@@ -590,7 +593,7 @@ class UserServiceTest {
   void recoverEmailSend_USER_UNREGISTERED() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -604,7 +607,7 @@ class UserServiceTest {
   void testRecoverEmailSend_UserTempResetNotExist() {
     // given
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByUser(testUser)).thenReturn(Optional.empty());
 
     // when
@@ -654,7 +657,7 @@ class UserServiceTest {
     String email = requestDto.getEmail();
     String diffPassword = requestDto.getPassword();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByToken(token)).thenReturn(Optional.of(testUserTempReset));
 
     when(passwordEncoder.encode(diffPassword)).thenReturn("encodedPassword");
@@ -664,7 +667,7 @@ class UserServiceTest {
     userService.recoverConfirm(requestDto);
 
     // then
-    Optional<User> changedPasswordUser = userRepository.findByEmail(testEmail);
+    Optional<User> changedPasswordUser = userRepository.findByEmailAndLogicDeleteFalse(testEmail);
     verify(passwordEncoder, times(1)).encode(diffPassword);
     verify(userRepository, times(1)).save(any(User.class));
     verify(userTempResetRepository, times(1)).delete(any(UserTempReset.class));
@@ -683,7 +686,7 @@ class UserServiceTest {
         .build();
     String email = requestDto.getEmail();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -704,7 +707,7 @@ class UserServiceTest {
     String email = testEmail;
     String token = testToken;
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(userTempResetRepository.findByToken(token)).thenReturn(Optional.empty());
 
     // when
@@ -744,7 +747,7 @@ class UserServiceTest {
     String prevPassword = requestDto.getPrevPassword();
     String newPassword = requestDto.getNewPassword();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(passwordEncoder.matches(prevPassword, testPassword)).thenReturn(true);
     when(passwordEncoder.encode(newPassword)).thenReturn("encodedPassword");
     when(passwordEncoder.matches(newPassword, "encodedPassword")).thenReturn(true);
@@ -753,7 +756,7 @@ class UserServiceTest {
     userService.resetPassword(requestDto);
 
     // then
-    Optional<User> changedPasswordUser = userRepository.findByEmail(testEmail);
+    Optional<User> changedPasswordUser = userRepository.findByEmailAndLogicDeleteFalse(testEmail);
     verify(passwordEncoder, times(1)).encode(newPassword);
     verify(userRepository, times(1)).save(any(User.class));
     assertNotNull(changedPasswordUser);
@@ -771,7 +774,7 @@ class UserServiceTest {
         .newPassword(testDiffPassword)
         .build();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -792,7 +795,7 @@ class UserServiceTest {
         .build();
     String prevPassword = requestDto.getPrevPassword();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(passwordEncoder.matches(prevPassword, testPassword)).thenReturn(false);
 
     // when
@@ -813,7 +816,7 @@ class UserServiceTest {
         .build();
     String diffUsername = requestDto.getUsername();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
 
     // when
     userService.resetUsername(requestDto);
@@ -832,7 +835,7 @@ class UserServiceTest {
         .username("diffUsername")
         .build();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -862,8 +865,9 @@ class UserServiceTest {
         .build();
     String username = requestDto.getUsername();
 
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-    when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(user));
+    when(userRepository.findByUsernameAndLogicDeleteFalse(username)).thenReturn(
+        Optional.of(testUser));
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -874,7 +878,7 @@ class UserServiceTest {
   }
 
   @Test
-  void userDelete_SUCCESS() {
+  void logicDelete_SUCCESS() {
     // given
     UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
         .password(testPassword)
@@ -882,7 +886,7 @@ class UserServiceTest {
     testUserDetails();
     String email = testEmail;
     String password = requestDto.getPassword();
-    when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.of(testUser));
     when(testUser.checkPassword(password, passwordEncoder)).thenReturn(true);
 
     // when
@@ -893,14 +897,14 @@ class UserServiceTest {
   }
 
   @Test
-  void userDelete_USER_UNREGISTERED() {
+  void logicDelete_USER_UNREGISTERED() {
     // given
     UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
         .password(testPassword)
         .build();
     testUserDetails();
     String email = testEmail;
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
 
     // when
     UserException exception = assertThrows(UserException.class,
@@ -911,7 +915,7 @@ class UserServiceTest {
   }
 
   @Test
-  void userDelete_PASSWORD_MISMATCH() {
+  void logicDelete_PASSWORD_MISMATCH() {
     // given
     UserDeleteRequestDto requestDto = UserDeleteRequestDto.builder()
         .password(testDiffPassword)
@@ -919,7 +923,7 @@ class UserServiceTest {
     testUserDetails();
     String email = testEmail;
     String password = requestDto.getPassword();
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.findByEmailAndLogicDeleteFalse(email)).thenReturn(Optional.empty());
     when(testUser.checkPassword(password, passwordEncoder)).thenReturn(false);
 
     // when

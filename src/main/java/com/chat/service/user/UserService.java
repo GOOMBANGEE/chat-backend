@@ -72,7 +72,7 @@ public class UserService {
 
   // 가입시 해당 이메일로 가입된 유저가 있는지 체크
   public Boolean validEmailDuplicate(String email) {
-    Optional<User> user = userRepository.findByEmail(email);
+    Optional<User> user = userRepository.findByEmailAndLogicDeleteFalse(email);
 
     // 이미존재 -> exception
     if (user.isPresent()) {
@@ -85,7 +85,7 @@ public class UserService {
 
   // 가입시 해당 사용자명으로 가입된 유저가 있는지 체크
   public Boolean validUsernameDuplicate(String username) {
-    Optional<User> user = userRepository.findByUsername(username);
+    Optional<User> user = userRepository.findByUsernameAndLogicDeleteFalse(username);
 
     // 이미존재 -> exception
     if (user.isPresent()) {
@@ -126,6 +126,7 @@ public class UserService {
         .password(passwordEncoder.encode(password))
         .registerDate(registerDate)
         .activated(false)
+        .logicDelete(false)
         .build();
 
     // jwt role
@@ -150,7 +151,7 @@ public class UserService {
 
   // 이메일 발송
   public void registerEmailSend(String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     UserTemp userTemp = userTempRepository.findByUser(user)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -181,7 +182,7 @@ public class UserService {
     String token = registerConfirmRequestDto.getToken();
     String email = registerConfirmRequestDto.getEmail();
 
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     UserTemp userTemp = userTempRepository.findByToken(token)
         .orElseThrow(() -> new UserException(TOKEN_INVALID));
@@ -195,7 +196,7 @@ public class UserService {
   public JwtTokenDto login(LoginRequestDto loginRequestDto) {
     String email = loginRequestDto.getEmail();
     String password = loginRequestDto.getPassword();
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     if (!user.checkActivated()) {
@@ -230,7 +231,7 @@ public class UserService {
   // 사용자정보 fetch
   public ProfileResponseDto profile() {
     String email = customUserDetailsService.getEmailByUserDetails();
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     return user.buildProfileResponseDto();
   }
@@ -241,7 +242,7 @@ public class UserService {
     String email = recoverRequestDto.getEmail();
 
     // 해당 이메일로 가입된 유저가 없는경우
-    User user = userRepository.findByEmail(email).orElse(null);
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email).orElse(null);
     if (user == null) {
       mailService.sendEmail(email, "비밀번호 초기화 링크입니다", "해당 이메일로 가입된 정보가 없습니다");
       return;
@@ -273,7 +274,7 @@ public class UserService {
 
   // 비밀번호 분실시 발송했던 이메일을 재발송
   public void recoverEmailSend(String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     UserTempReset userTempReset = userTempResetRepository.findByUser(user)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -302,7 +303,7 @@ public class UserService {
     String email = recoverConfirmRequestDto.getEmail();
     String password = passwordEncoder.encode(recoverConfirmRequestDto.getPassword());
 
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     UserTempReset userTempReset = userTempResetRepository.findByToken(token)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -321,7 +322,7 @@ public class UserService {
     String prevPassword = resetPasswordRequestDto.getPrevPassword();
     String newPassword = passwordEncoder.encode(resetPasswordRequestDto.getNewPassword());
 
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     // 비밀번호 재설정시 이전 비밀번호 확인
     if (user.checkPassword(prevPassword, passwordEncoder)) {
@@ -338,7 +339,7 @@ public class UserService {
     String email = customUserDetailsService.getEmailByUserDetails();
     String username = requestDto.getUsername();
     // 유저검색
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 사용자명 중복 검사
@@ -354,13 +355,13 @@ public class UserService {
   public void userDelete(UserDeleteRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     String password = requestDto.getPassword();
     if (user.checkPassword(password, passwordEncoder)) {
-      user.userDelete();
-      userRepository.delete(user);
+      user.logicDelete();
+      userRepository.save(user);
       return;
     }
     throw new UserException(PASSWORD_MISMATCH);
