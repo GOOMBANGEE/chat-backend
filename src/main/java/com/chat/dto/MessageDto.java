@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 public class MessageDto {
 
   public enum MessageType {
-    ENTER, SEND, INFO, LEAVE, DELETE
+    ENTER, SEND, INFO, LEAVE,
+    UPDATE_CHAT, DELETE_CHAT,
+    DELETE_SERVER
   }
 
   private MessageType messageType;

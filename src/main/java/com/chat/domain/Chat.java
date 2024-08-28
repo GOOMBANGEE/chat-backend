@@ -33,13 +33,16 @@ public class Chat {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user", referencedColumnName = "id")
   private User user;
-  
+
+  private boolean logicDelete;
+
   @Builder
-  public Chat(Long id, String message, Server server, User user) {
+  public Chat(Long id, String message, Server server, User user, boolean logicDelete) {
     this.id = id;
     this.message = message;
     this.server = server;
     this.user = user;
+    this.logicDelete = logicDelete;
   }
 
   public Long fetchChatIdForSendMessageResponse() {
@@ -54,5 +57,13 @@ public class Chat {
         .username(messageDto.getUsername())
         .message(this.message)
         .build();
+  }
+
+  public void updateMessage(MessageDto messageDto) {
+    this.message = messageDto.getMessage();
+  }
+
+  public void logicDelete() {
+    this.logicDelete = true;
   }
 }

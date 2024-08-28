@@ -14,6 +14,8 @@ public class ValidExceptionHandler {
       case "VALID:TOKEN_INVALID" -> ErrorResponseDto.build(id, "토큰이 유효하지 않습니다");
       case "VALID:CODE_INVALID" -> ErrorResponseDto.build(id, "코드가 유효하지 않습니다");
       case "VALID:VALUE_INVALID" -> ErrorResponseDto.build(id, "값이 유효하지 않습니다");
+      case "VALID:SERVER_INVALID" -> ErrorResponseDto.build(id, "서버가 유효하지 않습니다");
+      case "VALID:CHAT_INVALID" -> ErrorResponseDto.build(id, "채팅이 유효하지 않습니다");
       default -> ErrorResponseDto.build("VALID:UNKNOWN", "알 수 없는 오류");
     };
   }

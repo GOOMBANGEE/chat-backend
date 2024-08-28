@@ -24,7 +24,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return queryFactory
         .select(new QChatInfoDto(chat.id, chat.user.username, chat.message))
         .from(chat)
-        .where(serverIdEq(serverId))
+        .where(serverIdEq(serverId), chatDeleteFalse())
         .orderBy(chat.id.desc())
         .limit(50)
         .fetch();
@@ -32,5 +32,9 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
 
   private BooleanExpression serverIdEq(Long serverId) {
     return isEmpty(serverId) ? null : server.id.eq(serverId);
+  }
+
+  private BooleanExpression chatDeleteFalse() {
+    return chat.logicDelete.eq(Boolean.FALSE);
   }
 }
