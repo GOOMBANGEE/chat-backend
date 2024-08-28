@@ -9,6 +9,7 @@ import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
+import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.service.server.ServerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
@@ -47,7 +48,7 @@ public class ServerController {
   }
 
   // 서버 설정변경
-  @PostMapping("/setting/{serverId}")
+  @PostMapping("/{serverId}/setting")
   public ResponseEntity<EmptyResponseDto> setting(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
@@ -59,7 +60,7 @@ public class ServerController {
 
 
   // 서버 입장
-  @PostMapping("/join/{code}")
+  @PostMapping("/{code}/join")
   public ResponseEntity<ServerJoinResponseDto> join(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("code")
@@ -69,7 +70,7 @@ public class ServerController {
   }
 
   // 서버 초대코드 조회
-  @GetMapping("/invite/{code}")
+  @GetMapping("/{code}/invite")
   public ResponseEntity<ServerInviteInfoResponseDto> inviteInfo(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("code")
@@ -79,7 +80,7 @@ public class ServerController {
   }
 
   // 서버 초대코드 생성
-  @PostMapping("/invite/{serverId}")
+  @PostMapping("/{serverId}/invite")
   public ResponseEntity<ServerInviteResponseDto> invite(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
@@ -89,7 +90,7 @@ public class ServerController {
   }
 
   // 서버 삭제
-  @PostMapping("/delete/{serverId}")
+  @PostMapping("/{serverId}/delete")
   public ResponseEntity<EmptyResponseDto> delete(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
@@ -98,4 +99,16 @@ public class ServerController {
     serverService.delete(serverId, requestDto);
     return ResponseEntity.ok(null);
   }
+
+  // 서버 유저 목록
+  @GetMapping("/{serverId}/list/user")
+  public ResponseEntity<ServerUserListResponseDto> userList(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId) {
+    ServerUserListResponseDto responseDto = serverService.userList(serverId);
+    return ResponseEntity.ok(responseDto);
+  }
+
+
 }

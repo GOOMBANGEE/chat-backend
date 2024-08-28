@@ -39,7 +39,7 @@ public class ChatController {
     return ResponseEntity.ok(null);
   }
 
-  @GetMapping("/list/{serverId}")
+  @GetMapping("/{serverId}/list")
   public ResponseEntity<ChatListResponseDto> list(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")

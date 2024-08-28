@@ -79,7 +79,7 @@ public class UserController {
   }
 
   // 가입 확인메일에서 진입하는 링크가 유효한 링크인지 검증
-  @GetMapping("/register/{token}")
+  @GetMapping("/{token}/register")
   public ResponseEntity<RegisterTokenCheckResponseDto> registerTokenCheck(
       @NotNull(message = TOKEN_INVALID)
       @PathVariable("token")
@@ -142,7 +142,7 @@ public class UserController {
   }
 
   // 비밀번호 복구 메일에서 진입하는 링크가 유효한 링크인지 검증
-  @GetMapping("/recover/{token}")
+  @GetMapping("/{token}/recover")
   public ResponseEntity<RecoverTokenCheckResponseDto> recoverTokenCheck(
       @NotNull(message = TOKEN_INVALID)
       @PathVariable("token")
