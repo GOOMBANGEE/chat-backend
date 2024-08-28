@@ -27,11 +27,14 @@ public class Server {
 
   private Long userCount;
 
+  private boolean logicDelete;
+
   @Builder
-  public Server(String name, String ownerUsername, Long userCount) {
+  public Server(String name, String ownerUsername, Long userCount, boolean logicDelete) {
     this.name = name;
     this.ownerUsername = ownerUsername;
     this.userCount = userCount;
+    this.logicDelete = logicDelete;
   }
 
   public Long getServerIdForServerCreateResponse() {
@@ -60,5 +63,13 @@ public class Server {
 
   public void createInviteCode(String code) {
     this.code = code;
+  }
+
+  public boolean checkName(String name) {
+    return this.name.equals(name);
+  }
+
+  public void logicDelete() {
+    this.logicDelete = true;
   }
 }

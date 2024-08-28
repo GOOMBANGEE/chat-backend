@@ -3,8 +3,11 @@ package com.chat.service.server;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
+import com.chat.dto.MessageDto;
+import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
+import com.chat.dto.server.ServerDeleteRequestDto;
 import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
@@ -20,6 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +36,17 @@ public class ServerService {
   private final CustomUserDetailsService customUserDetailsService;
   private final ServerRepository serverRepository;
   private final UserRepository userRepository;
+  private final ServerUserRelationRepository serverUserRelationRepository;
 
   private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
+  private static final String SERVER_NAME_INVALID = "SERVER:SERVER_NAME_INVALID";
+  private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
+  private static final String SERVER_NOT_PERMITTED = "SERVER:SERVER_NOT_PERMITTED";
   private static final String SERVER_ALREADY_JOINED = "SERVER:SERVER_ALREADY_JOINED";
 
+  private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
-  private final ServerUserRelationRepository serverUserRelationRepository;
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -59,6 +67,7 @@ public class ServerService {
         .name(name)
         .ownerUsername(username)
         .userCount(1L)
+        .logicDelete(false)
         .build();
 
     ServerUserRelation serverUserRelation = ServerUserRelation.builder()
@@ -101,7 +110,7 @@ public class ServerService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
-    Server server = serverRepository.findByCode(code)
+    Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     boolean isAlreadyJoined = serverUserRelationRepository.findServerUserRelationByUserAndServer(
@@ -132,7 +141,7 @@ public class ServerService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
-    Server server = serverRepository.findByCode(code)
+    Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     boolean isAlreadyJoined = serverUserRelationRepository.findServerUserRelationByUserAndServer(
@@ -184,7 +193,7 @@ public class ServerService {
     String code;
     do {
       code = randomAlphaNumeric(8);
-    } while (serverRepository.findByCode(code).isPresent());
+    } while (serverRepository.findByCodeAndLogicDeleteFalse(code).isPresent());
     return code;
   }
 
@@ -197,4 +206,43 @@ public class ServerService {
     }
     return builder.toString();
   }
+
+  // 서버 삭제
+  @Transactional
+  public void delete(Long serverId, ServerDeleteRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버 참여자인지 확인
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+
+    Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+
+    String name = requestDto.getName();
+    if (!server.checkName(name)) {
+      throw new ServerException(SERVER_NAME_INVALID);
+    }
+
+    // 서버의 주인인지 확인
+    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
+            user, server)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+
+    // 주인이 아닌경우 권한없음
+    if (serverUserRelation.isOwner()) {
+      server.logicDelete();
+
+      // stomp pub
+      String serverUrl = SUB_SERVER + serverId;
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.DELETE)
+          .serverId(serverId)
+          .build();
+      messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+      return;
+    }
+    throw new ServerException(SERVER_NOT_PERMITTED);
+  }
+
 }

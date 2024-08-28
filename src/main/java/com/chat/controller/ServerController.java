@@ -1,7 +1,9 @@
 package com.chat.controller;
 
+import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
+import com.chat.dto.server.ServerDeleteRequestDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
@@ -75,4 +77,13 @@ public class ServerController {
   }
 
   // 서버 삭제
+  @PostMapping("/delete/{serverId}")
+  public ResponseEntity<EmptyResponseDto> delete(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId,
+      @RequestBody @Valid ServerDeleteRequestDto requestDto) {
+    serverService.delete(serverId, requestDto);
+    return ResponseEntity.ok(null);
+  }
 }

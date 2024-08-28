@@ -38,4 +38,8 @@ public class ServerUserRelation {
     this.user = user;
     this.owner = owner;
   }
+
+  public boolean isOwner() {
+    return owner;
+  }
 }

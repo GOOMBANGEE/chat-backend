@@ -27,7 +27,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .select(serverUserRelation.server)
         .from(serverUserRelation)
         .join(serverUserRelation.server, server)
-        .where(userEq(user), serverIdEq(serverId))
+        .where(userEq(user), serverIdEq(serverId), serverNotDelete())
         .fetchFirst());
   }
 
@@ -39,6 +39,9 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return serverUserRelation.server.id.eq(serverId);
   }
 
+  private BooleanExpression serverNotDelete() {
+    return serverUserRelation.server.logicDelete.eq(Boolean.FALSE);
+  }
 
   @Override
   public List<ServerInfoDto> fetchServerInfoDtoListByUser(User user) {
@@ -47,7 +50,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             serverUserRelation.server.name))
         .from(serverUserRelation)
         .join(serverUserRelation.server, server)
-        .where(userEq(user))
+        .where(userEq(user), serverNotDelete())
         .fetch();
   }
 }
