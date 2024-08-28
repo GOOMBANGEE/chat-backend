@@ -13,11 +13,14 @@ import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
+import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.exception.ServerException;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +50,7 @@ public class ServerService {
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
+  private final ObjectMapper mapper = new ObjectMapper();
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -100,6 +104,48 @@ public class ServerService {
         .serverList(serverInfoDtoList)
         .build();
   }
+
+  // 서버 설정변경
+  @Transactional
+  public void setting(Long serverId, ServerSettingRequestDto requestDto)
+      throws JsonProcessingException {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버 참여자인지 확인
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+
+    Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+
+    // 서버의 주인인지 확인
+    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
+            user, server)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+
+    // 주인이 아닌경우 권한없음
+    if (serverUserRelation.isOwner()) {
+      String name = requestDto.getName();
+      server.changeServerName(name);
+      serverRepository.save(server);
+
+      // stomp pub
+      String serverUrl = SUB_SERVER + serverId;
+      ServerInfoDto serverInfoDto = ServerInfoDto.builder()
+          .id(serverId)
+          .name(name)
+          .build();
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.INFO)
+          .serverId(serverId)
+          .message(mapper.writeValueAsString(serverInfoDto))
+          .build();
+      messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+      return;
+    }
+    throw new ServerException(SERVER_NOT_PERMITTED);
+  }
+
 
   // 서버 입장
   @Transactional
@@ -232,11 +278,12 @@ public class ServerService {
     // 주인이 아닌경우 권한없음
     if (serverUserRelation.isOwner()) {
       server.logicDelete();
+      serverRepository.save(server);
 
       // stomp pub
       String serverUrl = SUB_SERVER + serverId;
       MessageDto newMessageDto = MessageDto.builder()
-          .messageType(MessageType.DELETE)
+          .messageType(MessageType.DELETE_SERVER)
           .serverId(serverId)
           .build();
       messagingTemplate.convertAndSend(serverUrl, newMessageDto);

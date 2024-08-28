@@ -27,7 +27,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .select(serverUserRelation.server)
         .from(serverUserRelation)
         .join(serverUserRelation.server, server)
-        .where(userEq(user), serverIdEq(serverId), serverNotDelete())
+        .where(userEq(user), serverIdEq(serverId), serverDeleteFalse())
         .fetchFirst());
   }
 
@@ -39,7 +39,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return serverUserRelation.server.id.eq(serverId);
   }
 
-  private BooleanExpression serverNotDelete() {
+  private BooleanExpression serverDeleteFalse() {
     return serverUserRelation.server.logicDelete.eq(Boolean.FALSE);
   }
 
@@ -50,7 +50,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             serverUserRelation.server.name))
         .from(serverUserRelation)
         .join(serverUserRelation.server, server)
-        .where(userEq(user), serverNotDelete())
+        .where(userEq(user), serverDeleteFalse())
         .fetch();
   }
 }

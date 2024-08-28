@@ -41,6 +41,10 @@ public class Server {
     return this.id;
   }
 
+  public void changeServerName(String newName) {
+    this.name = newName;
+  }
+
   public Long getServerIdForServerJoinResponse() {
     return this.id;
   }

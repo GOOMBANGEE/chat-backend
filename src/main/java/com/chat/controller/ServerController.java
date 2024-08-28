@@ -8,7 +8,9 @@ import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
+import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.service.server.ServerService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,16 @@ public class ServerController {
   }
 
   // 서버 설정변경
+  @PostMapping("/setting/{serverId}")
+  public ResponseEntity<EmptyResponseDto> setting(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId,
+      @RequestBody @Valid ServerSettingRequestDto requestDto) throws JsonProcessingException {
+    serverService.setting(serverId, requestDto);
+    return ResponseEntity.ok(null);
+  }
+
 
   // 서버 입장
   @PostMapping("/join/{code}")
