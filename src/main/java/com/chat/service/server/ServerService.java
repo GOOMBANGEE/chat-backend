@@ -14,6 +14,8 @@ import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
+import com.chat.dto.server.ServerUserInfoDto;
+import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.exception.ServerException;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
@@ -292,4 +294,23 @@ public class ServerService {
     throw new ServerException(SERVER_NOT_PERMITTED);
   }
 
+  public ServerUserListResponseDto userList(Long serverId) {
+    // serverUserRelation에 존재하는 모든 항목 가져오기
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버 참여자인지 확인
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+
+    Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+
+    List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationRepository.fetchServerUserInfoDtoListByUserAndServer(
+        user, server);
+
+    return ServerUserListResponseDto.builder()
+        .serverUserInfoDtoList(serverUserInfoDtoList)
+        .build();
+    
+  }
 }
