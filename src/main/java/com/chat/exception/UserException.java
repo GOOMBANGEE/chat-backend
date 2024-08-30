@@ -22,7 +22,10 @@ public class UserException extends RuntimeException {
       case "USER:EMAIL_ACTIVATE_REQUIRE" -> ErrorResponseDto.build(id, "이메일 활성화가 필요합니다");
       case "USER:CODE_INVALID" -> ErrorResponseDto.build(id, "인증코드가 유효하지 않습니다");
       case "USER:GET_AUTHENTICATION_FAIL" -> ErrorResponseDto.build(id, "인증정보가 유효하지 않습니다");
-
+      case "USER:USER_NOT_FOUND" -> ErrorResponseDto.build(id, "유저 정보를 찾을 수 없습니다");
+      case "USER:USER_ALREADY_FRIEND" -> ErrorResponseDto.build(id, "이미 등록된 유저입니다");
+      case "USER:USER_ALREADY_SENT_REQUEST" -> ErrorResponseDto.build(id, "상대방의 응답을 기다리는중입니다");
+      case "USER:USER_FRIEND_TEMP_NOT_FOUND" -> ErrorResponseDto.build(id, "존재하지 않는 요청입니다");
       default -> ErrorResponseDto.build("USER:UNKNOWN", "알 수 없는 오류");
     };
   }

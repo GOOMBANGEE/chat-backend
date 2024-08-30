@@ -2,10 +2,18 @@ package com.chat.service.user;
 
 import com.chat.domain.user.Role;
 import com.chat.domain.user.User;
+import com.chat.domain.user.UserFriend;
+import com.chat.domain.user.UserFriendTemp;
 import com.chat.domain.user.UserRole;
 import com.chat.domain.user.UserTemp;
 import com.chat.domain.user.UserTempReset;
 import com.chat.dto.JwtTokenDto;
+import com.chat.dto.MessageDto;
+import com.chat.dto.user.FriendAcceptRequestDto;
+import com.chat.dto.user.FriendListResponseDto;
+import com.chat.dto.user.FriendRejectRequestDto;
+import com.chat.dto.user.FriendRequestDto;
+import com.chat.dto.user.FriendWaitingListResponseDto;
 import com.chat.dto.user.LoginRequestDto;
 import com.chat.dto.user.ProfileResponseDto;
 import com.chat.dto.user.RecoverConfirmRequestDto;
@@ -17,21 +25,28 @@ import com.chat.dto.user.RegisterTokenCheckResponseDto;
 import com.chat.dto.user.ResetPasswordRequestDto;
 import com.chat.dto.user.ResetUsernameRequestDto;
 import com.chat.dto.user.UserDeleteRequestDto;
+import com.chat.dto.user.UserInfoForFriendListResponseDto;
+import com.chat.dto.user.UserInfoForFriendWaitingListResponseDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
 import com.chat.repository.user.RoleRepository;
+import com.chat.repository.user.UserFriendRepository;
+import com.chat.repository.user.UserFriendTempRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.repository.user.UserRoleRepository;
 import com.chat.repository.user.UserTempRepository;
 import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
 import com.chat.util.UUIDGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -47,15 +62,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
   private final CustomUserDetailsService customUserDetailsService;
+  private final MailService mailService;
+
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
   private final UserTempRepository userTempRepository;
   private final UserTempResetRepository userTempResetRepository;
+  private final RoleRepository roleRepository;
+  private final UserFriendRepository userFriendRepository;
+  private final UserFriendTempRepository userFriendTempRepository;
+
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final TokenProvider tokenProvider;
   private final PasswordEncoder passwordEncoder;
-  private final MailService mailService;
-  private final RoleRepository roleRepository;
   private final UUIDGenerator uuidGenerator;
 
   private static final String EMAIL_EXIST = "USER:EMAIL_EXIST";
@@ -65,6 +84,15 @@ public class UserService {
   private static final String TOKEN_INVALID = "USER:TOKEN_INVALID";
   private static final String EMAIL_OR_PASSWORD_ERROR = "USER:EMAIL_OR_PASSWORD_ERROR";
   private static final String EMAIL_ACTIVATE_REQUIRE = "USER:EMAIL_ACTIVATE_REQUIRE";
+  private static final String USER_NOT_FOUND = "USER:USER_NOT_FOUND";
+  private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
+  private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
+  private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
+
+
+  private final SimpMessagingTemplate messagingTemplate;
+  private static final String SUB_USER = "/sub/user/";
+  private final ObjectMapper mapper = new ObjectMapper();
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -365,6 +393,119 @@ public class UserService {
       return;
     }
     throw new UserException(PASSWORD_MISMATCH);
+  }
 
+  // 친구 신청
+  @Transactional
+  public void friend(FriendRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    Long friendId = requestDto.getFriendId();
+    User friend = userRepository.findByIdAndLogicDeleteFalse(friendId)
+        .orElseThrow(() -> new UserException(USER_NOT_FOUND));
+
+    // 이미 친구인 경우 오류
+    if (userFriendRepository.fetchByUserAndFriendAndLogicDeleteFalse(user, friend).isPresent()) {
+      throw new UserException(USER_ALREADY_FRIEND);
+    }
+    // 이미 신청하였다면 다시 메시지 보내지않음
+    if (userFriendTempRepository.fetchByUserAndFriend(user, friend).isPresent()) {
+      throw new UserException(USER_ALREADY_SENT_REQUEST);
+    }
+
+    // 새로운 요청 저장 및 상대방에게 알림 전송
+    UserFriendTemp userFriendTemp = UserFriendTemp.builder()
+        .user(user)
+        .friend(friend)
+        .build();
+    userFriendTempRepository.save(userFriendTemp);
+
+    String username = requestDto.getUsername();
+    String userUrl = SUB_USER + friendId;
+    Long id = requestDto.getId();
+    MessageDto newMessageDto = MessageDto.builder()
+        .userId(id)
+        .username(username)
+        .friendRequest(true)
+        .build();
+    messagingTemplate.convertAndSend(userUrl, newMessageDto);
+  }
+
+  // 친구 요청 대기중인 정보 가져오기
+  public FriendWaitingListResponseDto friendWaitingList() {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    List<UserInfoForFriendWaitingListResponseDto> waitingList = userFriendTempRepository
+        .fetchUserInfoByUser(user);
+
+    return FriendWaitingListResponseDto.builder()
+        .waitingList(waitingList)
+        .build();
+  }
+
+  // 친구 리스트 정보 가져오기
+  public FriendListResponseDto friendList() {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    List<UserInfoForFriendListResponseDto> userInfoList = userFriendRepository
+        .fetchUserInfoDtoListByUserAndLogicDeleteFalse(user);
+    return FriendListResponseDto.builder()
+        .friendList(userInfoList)
+        .build();
+  }
+
+  // 친구신청 수락
+  @Transactional
+  public void friendAccept(FriendAcceptRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    Long id = requestDto.getId();
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    User friend = userRepository.findByIdAndLogicDeleteFalse(id)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    // 존재하는 요청인지 확인
+    UserFriendTemp userFriendTemp = userFriendTempRepository.fetchByUserAndFriend(user, friend)
+        .orElseThrow(() -> new UserException(USER_FRIEND_TEMP_NOT_FOUND));
+
+    // 등록
+    UserFriend userFriend = UserFriend.builder()
+        .user(user)
+        .friend(friend)
+        .build();
+
+    userFriendTempRepository.delete(userFriendTemp);
+    userFriendRepository.save(userFriend);
+  }
+
+  // 친구신청 거절
+  @Transactional
+  public void friendReject(FriendRejectRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    Long id = requestDto.getId();
+
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    User friend = userRepository.findByIdAndLogicDeleteFalse(id)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    // 존재하는 요청인지 확인
+    UserFriendTemp userFriendTemp = userFriendTempRepository.fetchByUserAndFriend(user, friend)
+        .orElseThrow(() -> new UserException(USER_FRIEND_TEMP_NOT_FOUND));
+
+    // 삭제
+    userFriendTempRepository.delete(userFriendTemp);
   }
 }

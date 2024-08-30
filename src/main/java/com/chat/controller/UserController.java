@@ -4,6 +4,11 @@ import com.chat.dto.AccessTokenDto;
 import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.user.EmailCheckRequestDto;
+import com.chat.dto.user.FriendAcceptRequestDto;
+import com.chat.dto.user.FriendListResponseDto;
+import com.chat.dto.user.FriendRejectRequestDto;
+import com.chat.dto.user.FriendRequestDto;
+import com.chat.dto.user.FriendWaitingListResponseDto;
 import com.chat.dto.user.LoginRequestDto;
 import com.chat.dto.user.ProfileResponseDto;
 import com.chat.dto.user.RecoverConfirmRequestDto;
@@ -179,6 +184,44 @@ public class UserController {
   public ResponseEntity<EmptyResponseDto> userDelete(
       @RequestBody @Valid UserDeleteRequestDto requestDto) {
     userService.userDelete(requestDto);
+    return ResponseEntity.ok(null);
+  }
+
+  // 친구 신청
+  @PostMapping("/friend")
+  public ResponseEntity<EmptyResponseDto> friend(
+      @RequestBody @Valid FriendRequestDto requestDto) {
+    userService.friend(requestDto);
+    return ResponseEntity.ok(null);
+  }
+
+  // 친구 요청 대기중인 정보 가져오기
+  @GetMapping("/friend/waiting/list")
+  public ResponseEntity<FriendWaitingListResponseDto> friendWaitingList() {
+    FriendWaitingListResponseDto responseDto = userService.friendWaitingList();
+    return ResponseEntity.ok(responseDto);
+  }
+
+  // 친구 리스트 정보 가져오기
+  @GetMapping("/friend/list")
+  public ResponseEntity<FriendListResponseDto> friendList() {
+    FriendListResponseDto responseDto = userService.friendList();
+    return ResponseEntity.ok(responseDto);
+  }
+
+  // 친구신청 수락
+  @PostMapping("/friend/accept")
+  public ResponseEntity<EmptyResponseDto> friendAccept(
+      @RequestBody @Valid FriendAcceptRequestDto requestDto) {
+    userService.friendAccept(requestDto);
+    return ResponseEntity.ok(null);
+  }
+
+  // 친구신청 거절
+  @PostMapping("/friend/reject")
+  public ResponseEntity<EmptyResponseDto> friendReject(
+      @RequestBody @Valid FriendRejectRequestDto requestDto) {
+    userService.friendReject(requestDto);
     return ResponseEntity.ok(null);
   }
 }
