@@ -1,6 +1,7 @@
 package com.chat.domain.user;
 
 import com.chat.dto.user.ProfileResponseDto;
+import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -107,5 +108,16 @@ public class User {
   // 유저 삭제
   public void logicDelete() {
     this.logicDelete = true;
+  }
+
+  public UserInfoForServerJoinResponseDto fetchUserInfoForServerJoinResponse() {
+    return UserInfoForServerJoinResponseDto.builder()
+        .userId(this.id)
+        .username(this.username)
+        .build();
+  }
+
+  public Long fetchUserIdForServerLeaveResponse() {
+    return this.id;
   }
 }

@@ -36,13 +36,17 @@ public class Chat {
 
   private boolean logicDelete;
 
+  private boolean enter;
+
   @Builder
-  public Chat(Long id, String message, Server server, User user, boolean logicDelete) {
+  public Chat(Long id, String message, Server server, User user, boolean logicDelete,
+      boolean enter) {
     this.id = id;
     this.message = message;
     this.server = server;
     this.user = user;
     this.logicDelete = logicDelete;
+    this.enter = enter;
   }
 
   public Long fetchChatIdForSendMessageResponse() {
@@ -65,5 +69,16 @@ public class Chat {
 
   public void logicDelete() {
     this.logicDelete = true;
+  }
+
+  public MessageDto buildMessageDtoForSeverJoinResponse(Long serverId, Long userId,
+      String username) {
+    return MessageDto.builder()
+        .serverId(serverId)
+        .chatId(this.id)
+        .userId(userId)
+        .username(username)
+        .enter(true)
+        .build();
   }
 }

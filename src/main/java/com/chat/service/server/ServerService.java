@@ -1,5 +1,6 @@
 package com.chat.service.server;
 
+import com.chat.domain.Chat;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
@@ -16,7 +17,9 @@ import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
+import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import com.chat.exception.ServerException;
+import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
@@ -42,6 +45,7 @@ public class ServerService {
   private final ServerRepository serverRepository;
   private final UserRepository userRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
+  private final ChatRepository chatRepository;
 
   private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -49,6 +53,7 @@ public class ServerService {
   private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
   private static final String SERVER_NOT_PERMITTED = "SERVER:SERVER_NOT_PERMITTED";
   private static final String SERVER_ALREADY_JOINED = "SERVER:SERVER_ALREADY_JOINED";
+  private static final String SERVER_NOT_EMPTY = "SERVER:SERVER_NOT_EMPTY";
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
@@ -176,6 +181,23 @@ public class ServerService {
 
     // return 입장한 서버 id
     Long serverId = server.getServerIdForServerJoinResponse();
+
+    // 서버 입장 메시지 전송
+    Chat chat = Chat.builder()
+        .server(server)
+        .user(user)
+        .logicDelete(false)
+        .enter(true)
+        .build();
+    chatRepository.save(chat);
+
+    String serverUrl = SUB_SERVER + serverId;
+    UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
+    Long userId = userInfoDto.getUserId();
+    String username = userInfoDto.getUsername();
+    MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
+    messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+
     return ServerJoinResponseDto.builder()
         .serverId(serverId)
         .build();
@@ -255,6 +277,43 @@ public class ServerService {
     return builder.toString();
   }
 
+  @Transactional
+  public void leave(Long serverId) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버 참여자인지 확인
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+
+    // todo role check
+    // 현재는 참여자확인만 이루어짐
+    Server server = serverUserRelationRepository.findServerByUserAndServerId(user, serverId)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+
+    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
+        user, server).orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+
+    // 서버 주인인 경우 유저가 남아있는지 체크
+    if (serverUserRelation.isOwner() &&
+        serverUserRelationRepository.findByServerAndOwnerFalseAndLogicDeleteFalse(server)
+            .isPresent()) {
+      // 유저가 남아있다면 주인은 나갈 수 없다
+      throw new ServerException(SERVER_NOT_EMPTY);
+    }
+
+    serverUserRelation.logicDelete();
+    serverUserRelationRepository.save(serverUserRelation);
+
+    String serverUrl = SUB_SERVER + serverId;
+    Long userId = user.fetchUserIdForServerLeaveResponse();
+    MessageDto newMessageDto = MessageDto.builder()
+        .serverId(serverId)
+        .userId(userId)
+        .leave(true)
+        .build();
+    messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+  }
+
   // 서버 삭제
   @Transactional
   public void delete(Long serverId, ServerDeleteRequestDto requestDto) {
@@ -274,8 +333,7 @@ public class ServerService {
 
     // 서버의 주인인지 확인
     ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-            user, server)
-        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+        user, server).orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
 
     // 주인이 아닌경우 권한없음
     if (serverUserRelation.isOwner()) {
@@ -311,6 +369,6 @@ public class ServerService {
     return ServerUserListResponseDto.builder()
         .serverUserInfoDtoList(serverUserInfoDtoList)
         .build();
-    
+
   }
 }

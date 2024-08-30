@@ -21,17 +21,27 @@ public class MessageDto {
 
   private Long chatId;
 
+  private Long userId;
+
   private String username;
 
   private String message;
 
+  private boolean enter;
+
+  private boolean leave;
+
   @Builder
-  public MessageDto(MessageType messageType, Long serverId, Long chatId, String username,
-      String message) {
+  public MessageDto(MessageType messageType, Long serverId, Long chatId, Long userId,
+      String username,
+      String message, boolean enter, boolean leave) {
     this.messageType = messageType;
     this.serverId = serverId;
     this.chatId = chatId;
+    this.userId = userId;
     this.username = username;
     this.message = message;
+    this.enter = enter;
+    this.leave = leave;
   }
 }

@@ -89,6 +89,17 @@ public class ServerController {
     return ResponseEntity.ok(responseDto);
   }
 
+  // 서버 나가기
+  @PostMapping("/{serverId}/leave")
+  public ResponseEntity<EmptyResponseDto> leave(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId) {
+    serverService.leave(serverId);
+    return ResponseEntity.ok(null);
+  }
+
+
   // 서버 삭제
   @PostMapping("/{serverId}/delete")
   public ResponseEntity<EmptyResponseDto> delete(
@@ -109,6 +120,4 @@ public class ServerController {
     ServerUserListResponseDto responseDto = serverService.userList(serverId);
     return ResponseEntity.ok(responseDto);
   }
-
-
 }

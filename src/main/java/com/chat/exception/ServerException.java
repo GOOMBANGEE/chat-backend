@@ -20,6 +20,7 @@ public class ServerException extends RuntimeException {
       case "SERVER:SERVER_ALREADY_JOINED" -> ErrorResponseDto.build(id, "이미 참여중인 서버입니다");
       case "SERVER:CHAT_NOT_FOUND" -> ErrorResponseDto.build(id, "채팅 정보가 없습니다");
       case "VALID:PAGE_INVALID" -> ErrorResponseDto.build(id, "페이지가 유효하지 않습니다");
+      case "SERVER:SERVER_NOT_EMPTY" -> ErrorResponseDto.build(id, "서버에 유저가 남아있습니다");
       default -> ErrorResponseDto.build("USER:UNKNOWN", "알 수 없는 오류");
     };
   }

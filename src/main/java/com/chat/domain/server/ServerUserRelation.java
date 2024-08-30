@@ -32,6 +32,8 @@ public class ServerUserRelation {
 
   private boolean owner;
 
+  private boolean logicDelete;
+
   @Builder
   public ServerUserRelation(Server server, User user, boolean owner) {
     this.server = server;
@@ -41,5 +43,9 @@ public class ServerUserRelation {
 
   public boolean isOwner() {
     return owner;
+  }
+
+  public void logicDelete() {
+    this.logicDelete = true;
   }
 }
