@@ -63,7 +63,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
       Server server) {
     return queryFactory
         .select(
-            new QServerUserInfoDto(qServerUserRelation.server.id,
+            new QServerUserInfoDto(qServerUserRelation.user.id,
                 qServerUserRelation.user.username))
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)

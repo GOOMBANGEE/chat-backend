@@ -112,7 +112,7 @@ public class User {
 
   public UserInfoForServerJoinResponseDto fetchUserInfoForServerJoinResponse() {
     return UserInfoForServerJoinResponseDto.builder()
-        .userId(this.id)
+        .id(this.id)
         .username(this.username)
         .build();
   }

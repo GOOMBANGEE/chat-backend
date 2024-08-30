@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserInfoForServerJoinResponseDto {
 
-  private Long userId;
+  private Long id;
 
   private String username;
 
   @Builder
-  public UserInfoForServerJoinResponseDto(Long userId, String username) {
-    this.userId = userId;
+  public UserInfoForServerJoinResponseDto(Long id, String username) {
+    this.id = id;
     this.username = username;
   }
 }

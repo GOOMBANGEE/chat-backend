@@ -193,7 +193,7 @@ public class ServerService {
 
     String serverUrl = SUB_SERVER + serverId;
     UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
-    Long userId = userInfoDto.getUserId();
+    Long userId = userInfoDto.getId();
     String username = userInfoDto.getUsername();
     MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
