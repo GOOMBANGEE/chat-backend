@@ -98,6 +98,8 @@ public class UserService {
 
   @Value("${server.front-url}")
   private String frontUrl;
+  @Value("${server.pepper}")
+  private String pepper;
 
 
   // 가입시 해당 이메일로 가입된 유저가 있는지 체크
@@ -153,7 +155,7 @@ public class UserService {
     User user = User.builder()
         .email(email)
         .username(username)
-        .password(passwordEncoder.encode(password))
+        .password(passwordEncoder.encode(password + pepper))
         .registerDate(registerDate)
         .activated(false)
         .logicDelete(false)
@@ -236,7 +238,7 @@ public class UserService {
     try {
       // 1. Login Email, Password 로 AuthenticationToken 생성
       UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-          email, password);
+          email, password + pepper);
 
       // 2. Email, Password 일치 검증이 일어남
       //    authenticationManagerBuilder.getObject().authenticate() 에서 CustomUserDetailsService 의 loadUserByUsername() 실행됨
@@ -331,7 +333,7 @@ public class UserService {
   public void recoverConfirm(RecoverConfirmRequestDto recoverConfirmRequestDto) {
     String token = recoverConfirmRequestDto.getToken();
     String email = recoverConfirmRequestDto.getEmail();
-    String password = passwordEncoder.encode(recoverConfirmRequestDto.getPassword());
+    String password = passwordEncoder.encode(recoverConfirmRequestDto.getPassword() + pepper);
 
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -350,12 +352,12 @@ public class UserService {
   public void resetPassword(ResetPasswordRequestDto resetPasswordRequestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
     String prevPassword = resetPasswordRequestDto.getPrevPassword();
-    String newPassword = passwordEncoder.encode(resetPasswordRequestDto.getNewPassword());
+    String newPassword = passwordEncoder.encode(resetPasswordRequestDto.getNewPassword() + pepper);
 
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     // 비밀번호 재설정시 이전 비밀번호 확인
-    if (user.checkPassword(prevPassword, passwordEncoder)) {
+    if (user.checkPassword(prevPassword + pepper, passwordEncoder)) {
       user.resetPassword(newPassword);
       userRepository.save(user);
       return;
@@ -389,7 +391,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     String password = requestDto.getPassword();
-    if (user.checkPassword(password, passwordEncoder)) {
+    if (user.checkPassword(password + pepper, passwordEncoder)) {
       user.logicDelete();
       userRepository.save(user);
       return;
