@@ -5,6 +5,7 @@ import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.user.EmailCheckRequestDto;
 import com.chat.dto.user.FriendAcceptRequestDto;
+import com.chat.dto.user.FriendDeleteRequestDto;
 import com.chat.dto.user.FriendListResponseDto;
 import com.chat.dto.user.FriendRejectRequestDto;
 import com.chat.dto.user.FriendRequestDto;
@@ -222,6 +223,14 @@ public class UserController {
   public ResponseEntity<EmptyResponseDto> friendReject(
       @RequestBody @Valid FriendRejectRequestDto requestDto) {
     userService.friendReject(requestDto);
+    return ResponseEntity.ok(null);
+  }
+
+  // 친구삭제
+  @PostMapping("/friend/delete")
+  public ResponseEntity<EmptyResponseDto> friendDelete(
+      @RequestBody @Valid FriendDeleteRequestDto requestDto) {
+    userService.friendDelete(requestDto);
     return ResponseEntity.ok(null);
   }
 }

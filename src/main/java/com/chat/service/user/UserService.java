@@ -10,6 +10,7 @@ import com.chat.domain.user.UserTempReset;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.MessageDto;
 import com.chat.dto.user.FriendAcceptRequestDto;
+import com.chat.dto.user.FriendDeleteRequestDto;
 import com.chat.dto.user.FriendListResponseDto;
 import com.chat.dto.user.FriendRejectRequestDto;
 import com.chat.dto.user.FriendRequestDto;
@@ -88,6 +89,7 @@ public class UserService {
   private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
   private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
   private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
+  private static final String USER_NOT_FRIEND = "USER:USER_NOT_FRIEND";
 
 
   private final SimpMessagingTemplate messagingTemplate;
@@ -527,5 +529,34 @@ public class UserService {
 
     // 삭제
     userFriendTempRepository.delete(userFriendTemp);
+  }
+
+  // 친구 삭제
+  @Transactional
+  public void friendDelete(FriendDeleteRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    Long friendId = requestDto.getFriendId();
+
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    User friend = userRepository.findByIdAndLogicDeleteFalse(friendId)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    // 삭제
+    userFriendRepository.deleteAll(userFriendRepository.fetchListByUserAndFriend(user, friend));
+
+    // id, username -> 친구삭제 요청을 보낸유저
+    // friendId -> 친구삭제 대상
+    Long id = requestDto.getId();
+    String username = requestDto.getUsername();
+    String userUrl = SUB_USER + friendId;
+    // 친구삭제대상(friendId)에게 친구삭제 요청을 보낸유저(id)의 정보를 보냄
+    MessageDto newMessageDto = MessageDto.builder()
+        .userId(id)
+        .username(username)
+        .friendDelete(true)
+        .build();
+    messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }
 }

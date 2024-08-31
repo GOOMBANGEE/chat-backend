@@ -41,6 +41,14 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
         .and(qUserFriend.user.eq(friend));
   }
 
+  @Override
+  public List<UserFriend> fetchListByUserAndFriend(User user, User friend) {
+    return queryFactory
+        .select(qUserFriend)
+        .from(qUserFriend)
+        .where(userFriendOrFriendUser(user, friend))
+        .fetch();
+  }
 
   @Override
   public List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(

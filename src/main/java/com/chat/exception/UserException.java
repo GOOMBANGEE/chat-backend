@@ -26,6 +26,7 @@ public class UserException extends RuntimeException {
       case "USER:USER_ALREADY_FRIEND" -> ErrorResponseDto.build(id, "이미 등록된 유저입니다");
       case "USER:USER_ALREADY_SENT_REQUEST" -> ErrorResponseDto.build(id, "상대방의 응답을 기다리는중입니다");
       case "USER:USER_FRIEND_TEMP_NOT_FOUND" -> ErrorResponseDto.build(id, "존재하지 않는 요청입니다");
+      case "USER:USER_NOT_FRIEND" -> ErrorResponseDto.build(id, "친구정보가 없습니다");
       default -> ErrorResponseDto.build("USER:UNKNOWN", "알 수 없는 오류");
     };
   }

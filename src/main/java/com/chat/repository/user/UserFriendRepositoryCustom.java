@@ -11,5 +11,7 @@ public interface UserFriendRepositoryCustom {
 
   Optional<UserFriend> fetchByUserAndFriend(User user, User friend);
 
+  List<UserFriend> fetchListByUserAndFriend(User user, User friend);
+
   List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(User user);
 }
