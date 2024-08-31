@@ -19,7 +19,7 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
   QUserFriend qUserFriend = QUserFriend.userFriend;
 
   @Override
-  public Optional<UserFriend> fetchByUserAndFriendAndLogicDeleteFalse(User user, User friend) {
+  public Optional<UserFriend> fetchByUserAndFriend(User user, User friend) {
     return Optional.ofNullable(queryFactory
         .select(qUserFriend)
         .from(qUserFriend)
@@ -43,7 +43,7 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
 
 
   @Override
-  public List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUserAndLogicDeleteFalse(
+  public List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(
       User user) {
     return queryFactory
         .select(new QUserInfoForFriendListResponseDto(qUserFriend.friend.id,

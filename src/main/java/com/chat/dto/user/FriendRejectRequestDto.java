@@ -11,11 +11,8 @@ public class FriendRejectRequestDto {
 
   private Long id;
 
-  private String username;
-
   @Builder
-  public FriendRejectRequestDto(Long id, String username) {
+  public FriendRejectRequestDto(Long id) {
     this.id = id;
-    this.username = username;
   }
 }

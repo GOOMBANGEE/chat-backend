@@ -33,9 +33,14 @@ public class MessageDto {
 
   private boolean friendRequest;
 
+  private boolean friendAccept;
+
+  private boolean friendDelete;
+
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long chatId, Long userId,
-      String username, String message, boolean enter, boolean leave, boolean friendRequest) {
+      String username, String message, boolean enter, boolean leave, boolean friendRequest,
+      boolean friendAccept, boolean friendDelete) {
     this.messageType = messageType;
     this.serverId = serverId;
     this.chatId = chatId;
@@ -45,5 +50,7 @@ public class MessageDto {
     this.enter = enter;
     this.leave = leave;
     this.friendRequest = friendRequest;
+    this.friendAccept = friendAccept;
+    this.friendDelete = friendDelete;
   }
 }

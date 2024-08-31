@@ -409,7 +409,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_NOT_FOUND));
 
     // 이미 친구인 경우 오류
-    if (userFriendRepository.fetchByUserAndFriendAndLogicDeleteFalse(user, friend).isPresent()) {
+    if (userFriendRepository.fetchByUserAndFriend(user, friend).isPresent()) {
       throw new UserException(USER_ALREADY_FRIEND);
     }
     // 이미 신청하였다면 다시 메시지 보내지않음
@@ -424,9 +424,12 @@ public class UserService {
         .build();
     userFriendTempRepository.save(userFriendTemp);
 
+    // id, username -> 요청보내는사람
+    // friendId -> 요청받는사람
     String username = requestDto.getUsername();
     String userUrl = SUB_USER + friendId;
     Long id = requestDto.getId();
+    // 요청 보내는사람의 정보(id)를 요청받는사람(friendId)에게 보냄
     MessageDto newMessageDto = MessageDto.builder()
         .userId(id)
         .username(username)
@@ -442,7 +445,6 @@ public class UserService {
     // 유저검색
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
     List<UserInfoForFriendWaitingListResponseDto> waitingList = userFriendTempRepository
         .fetchUserInfoByUser(user);
 
@@ -458,7 +460,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     List<UserInfoForFriendListResponseDto> userInfoList = userFriendRepository
-        .fetchUserInfoDtoListByUserAndLogicDeleteFalse(user);
+        .fetchUserInfoDtoListByUser(user);
     return FriendListResponseDto.builder()
         .friendList(userInfoList)
         .build();
@@ -468,11 +470,11 @@ public class UserService {
   @Transactional
   public void friendAccept(FriendAcceptRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
-    Long id = requestDto.getId();
+    Long friendId = requestDto.getFriendId();
     // 유저검색
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    User friend = userRepository.findByIdAndLogicDeleteFalse(id)
+    User friend = userRepository.findByIdAndLogicDeleteFalse(friendId)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 존재하는 요청인지 확인
@@ -484,9 +486,27 @@ public class UserService {
         .user(user)
         .friend(friend)
         .build();
+    UserFriend friendUser = UserFriend.builder()
+        .user(friend)
+        .friend(user)
+        .build();
 
     userFriendTempRepository.delete(userFriendTemp);
     userFriendRepository.save(userFriend);
+    userFriendRepository.save(friendUser);
+
+    // id, username -> 요청 수락한 유저
+    // friendId -> 요청 신청했던 유저
+    Long id = requestDto.getId();
+    String username = requestDto.getUsername();
+    String userUrl = SUB_USER + friendId;
+    // 요청 수락한 유저(id)의 정보를 요청 신청했던유저(friendId)가 받아서 상태갱신
+    MessageDto newMessageDto = MessageDto.builder()
+        .userId(id)
+        .username(username)
+        .friendAccept(true)
+        .build();
+    messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }
 
   // 친구신청 거절

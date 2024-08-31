@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface UserFriendRepositoryCustom {
 
-  Optional<UserFriend> fetchByUserAndFriendAndLogicDeleteFalse(User user, User friend);
 
-  List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUserAndLogicDeleteFalse(User user);
+  Optional<UserFriend> fetchByUserAndFriend(User user, User friend);
+
+  List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(User user);
 }

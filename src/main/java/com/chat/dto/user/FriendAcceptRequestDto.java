@@ -11,11 +11,14 @@ public class FriendAcceptRequestDto {
 
   private Long id;
 
-  private String  username;
+  private String username;
+
+  private Long friendId;
 
   @Builder
-  public FriendAcceptRequestDto(Long id, String username) {
+  public FriendAcceptRequestDto(Long id, String username, Long friendId) {
     this.id = id;
     this.username = username;
+    this.friendId = friendId;
   }
 }
