@@ -18,6 +18,7 @@ import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -64,12 +65,15 @@ public class ChatService {
     Server server = serverUserRelationRepository.findServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
+    LocalDateTime createTime = LocalDateTime.now();
     // 메세지 저장
     Chat chat = Chat.builder()
         .message(message)
         .server(server)
         .user(user)
         .logicDelete(false)
+        .createTime(createTime)
+        .updateTime(createTime)
         .build();
     chatRepository.save(chat);
 
@@ -83,6 +87,7 @@ public class ChatService {
     return SendMessageResponseDto.builder()
         .serverId(serverId)
         .id(id)
+        .createTime(createTime)
         .build();
   }
 
@@ -107,7 +112,8 @@ public class ChatService {
     Chat chat = chatRepository.findByIdAndUserAndLogicDeleteFalse(chatId, user)
         .orElseThrow(() -> new ServerException(CHAT_NOT_FOUND));
 
-    chat.updateMessage(messageDto);
+    LocalDateTime updateTime = LocalDateTime.now();
+    chat.updateMessage(messageDto, updateTime);
     chatRepository.save(chat);
 
     // stomp pub
@@ -118,6 +124,7 @@ public class ChatService {
         .chatId(chatId)
         .username(messageDto.getUsername())
         .message(message)
+        .updateTime(updateTime)
         .build();
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
   }

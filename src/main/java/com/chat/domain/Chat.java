@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -38,15 +39,21 @@ public class Chat {
 
   private boolean enter;
 
+  private LocalDateTime createTime;
+
+  private LocalDateTime updateTime;
+
   @Builder
   public Chat(Long id, String message, Server server, User user, boolean logicDelete,
-      boolean enter) {
+      boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
     this.id = id;
     this.message = message;
     this.server = server;
     this.user = user;
     this.logicDelete = logicDelete;
     this.enter = enter;
+    this.createTime = createTime;
+    this.updateTime = updateTime;
   }
 
   public Long fetchChatIdForSendMessageResponse() {
@@ -60,11 +67,13 @@ public class Chat {
         .chatId(this.id)
         .username(messageDto.getUsername())
         .message(this.message)
+        .createTime(this.createTime)
         .build();
   }
 
-  public void updateMessage(MessageDto messageDto) {
+  public void updateMessage(MessageDto messageDto, LocalDateTime updateTime) {
     this.message = messageDto.getMessage();
+    this.updateTime = updateTime;
   }
 
   public void logicDelete() {
@@ -79,6 +88,7 @@ public class Chat {
         .userId(userId)
         .username(username)
         .enter(true)
+        .createTime(this.createTime)
         .build();
   }
 }

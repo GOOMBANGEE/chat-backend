@@ -1,5 +1,6 @@
 package com.chat.dto;
 
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,10 +38,15 @@ public class MessageDto {
 
   private boolean friendDelete;
 
+  private LocalDateTime createTime;
+
+  private LocalDateTime updateTime;
+
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long chatId, Long userId,
       String username, String message, boolean enter, boolean leave, boolean friendRequest,
-      boolean friendAccept, boolean friendDelete) {
+      boolean friendAccept, boolean friendDelete, LocalDateTime createTime,
+      LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
     this.chatId = chatId;
@@ -52,5 +58,7 @@ public class MessageDto {
     this.friendRequest = friendRequest;
     this.friendAccept = friendAccept;
     this.friendDelete = friendDelete;
+    this.createTime = createTime;
+    this.updateTime = updateTime;
   }
 }

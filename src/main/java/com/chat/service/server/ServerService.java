@@ -27,6 +27,7 @@ import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -182,12 +183,14 @@ public class ServerService {
     // return 입장한 서버 id
     Long serverId = server.getServerIdForServerJoinResponse();
 
+    LocalDateTime createTime = LocalDateTime.now();
     // 서버 입장 메시지 전송
     Chat chat = Chat.builder()
         .server(server)
         .user(user)
         .logicDelete(false)
         .enter(true)
+        .createTime(createTime)
         .build();
     chatRepository.save(chat);
 
