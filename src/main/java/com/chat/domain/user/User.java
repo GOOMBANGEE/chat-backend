@@ -117,6 +117,11 @@ public class User {
         .build();
   }
 
+
+  public Long fetchUserIdForFriendRequest() {
+    return this.id;
+  }
+
   public Long fetchUserIdForServerLeaveResponse() {
     return this.id;
   }

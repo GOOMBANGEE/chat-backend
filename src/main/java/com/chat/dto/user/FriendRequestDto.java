@@ -13,12 +13,12 @@ public class FriendRequestDto {
 
   private String username;
 
-  private Long friendId;
+  private String friendName;
 
   @Builder
-  public FriendRequestDto(Long id, String username, Long friendId) {
+  public FriendRequestDto(Long id, String username, String friendName) {
     this.id = id;
     this.username = username;
-    this.friendId = friendId;
+    this.friendName = friendName;
   }
 }

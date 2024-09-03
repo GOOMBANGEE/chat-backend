@@ -408,8 +408,8 @@ public class UserService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    Long friendId = requestDto.getFriendId();
-    User friend = userRepository.findByIdAndLogicDeleteFalse(friendId)
+    String friendName = requestDto.getFriendName();
+    User friend = userRepository.findByUsernameAndLogicDeleteFalse(friendName)
         .orElseThrow(() -> new UserException(USER_NOT_FOUND));
 
     // 이미 친구인 경우 오류
@@ -430,6 +430,7 @@ public class UserService {
 
     // id, username -> 요청보내는사람
     // friendId -> 요청받는사람
+    Long friendId = friend.fetchUserIdForFriendRequest();
     String username = requestDto.getUsername();
     String userUrl = SUB_USER + friendId;
     Long id = requestDto.getId();
