@@ -154,7 +154,6 @@ public class ServerService {
     throw new ServerException(SERVER_NOT_PERMITTED);
   }
 
-
   // 서버 입장
   @Transactional
   public ServerJoinResponseDto join(String code) {
@@ -181,7 +180,7 @@ public class ServerService {
     serverUserRelationRepository.save(serverUserRelation);
 
     // return 입장한 서버 id
-    Long serverId = server.getServerIdForServerJoinResponse();
+    ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse();
 
     LocalDateTime createTime = LocalDateTime.now();
     // 서버 입장 메시지 전송
@@ -194,6 +193,7 @@ public class ServerService {
         .build();
     chatRepository.save(chat);
 
+    Long serverId = responseDto.getId();
     String serverUrl = SUB_SERVER + serverId;
     UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
     Long userId = userInfoDto.getId();
@@ -201,9 +201,7 @@ public class ServerService {
     MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
 
-    return ServerJoinResponseDto.builder()
-        .serverId(serverId)
-        .build();
+    return responseDto;
   }
 
   // 서버 초대코드 조회

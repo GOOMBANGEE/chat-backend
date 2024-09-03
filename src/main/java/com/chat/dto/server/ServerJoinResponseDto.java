@@ -9,10 +9,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ServerJoinResponseDto {
 
-  private Long serverId;
+  private Long id;
+
+  private String name;
 
   @Builder
-  public ServerJoinResponseDto(Long serverId) {
-    this.serverId = serverId;
+  public ServerJoinResponseDto(Long id, String name) {
+    this.id = id;
+    this.name = name;
   }
 }

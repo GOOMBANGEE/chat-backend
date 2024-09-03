@@ -1,6 +1,7 @@
 package com.chat.domain.server;
 
 import com.chat.dto.server.ServerInviteInfoResponseDto;
+import com.chat.dto.server.ServerJoinResponseDto;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,8 +46,11 @@ public class Server {
     this.name = newName;
   }
 
-  public Long getServerIdForServerJoinResponse() {
-    return this.id;
+  public ServerJoinResponseDto getServerIdForServerJoinResponse() {
+    return ServerJoinResponseDto.builder()
+        .id(this.id)
+        .name(this.name)
+        .build();
   }
 
   public ServerInviteInfoResponseDto buildServerInviteInfoResponseDto() {
