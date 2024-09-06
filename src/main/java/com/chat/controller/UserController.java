@@ -47,6 +47,9 @@ public class UserController {
   private final TokenProvider tokenProvider;
 
   private static final String TOKEN_INVALID = "USER:TOKEN_INVALID";
+  private static final String AUTHORIZATION = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer ";
+  private static final String REFRESH_TOKEN = "Refresh-Token";
 
   // 가입시 해당 이메일로 가입된 유저가 있는지 체크
   @PostMapping("/email/check")
@@ -106,8 +109,8 @@ public class UserController {
       @RequestBody @Valid LoginRequestDto requestDto) {
     JwtTokenDto jwtTokenDto = userService.login(requestDto);
     return ResponseEntity.ok()
-        .header("Authorization", "Bearer " + jwtTokenDto.getAccessToken())
-        .header("Refresh-Token", jwtTokenDto.getRefreshToken())
+        .header(AUTHORIZATION, BEARER_PREFIX + jwtTokenDto.getAccessToken())
+        .header(REFRESH_TOKEN, jwtTokenDto.getRefreshToken())
         .build();
   }
 
@@ -122,7 +125,7 @@ public class UserController {
     // refresh token으로 access token 재발급
     String accessToken = tokenProvider.refreshAccessToken(refreshToken);
     return ResponseEntity.ok()
-        .header("Authorization", "Bearer " + accessToken)
+        .header(AUTHORIZATION, BEARER_PREFIX + accessToken)
         .build();
   }
 

@@ -14,6 +14,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+  private static final String AUTHORIZATION_HEADER = "Authorization";
+  private static final String REFRESH_TOKEN = "Refresh-Token";
+
   @Value("#{'${server.cors-urls}'.split(',')}")
   private List<String> corsUrlList;
 
@@ -38,6 +41,8 @@ public class WebConfig implements WebMvcConfigurer {
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     source.registerCorsConfiguration("/**", config);
+    config.addExposedHeader(AUTHORIZATION_HEADER);
+    config.addExposedHeader(REFRESH_TOKEN);
     return new CorsFilter(source);
   }
 }
