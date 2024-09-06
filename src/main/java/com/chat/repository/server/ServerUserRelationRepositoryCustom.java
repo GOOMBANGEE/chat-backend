@@ -13,5 +13,11 @@ public interface ServerUserRelationRepositoryCustom {
 
   List<ServerInfoDto> fetchServerInfoDtoListByUser(User user);
 
-  List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(User user, Server server);
+  List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(User user,
+      Server server);
+
+  // 유저가 속해있는 모든 서버의 id 가져옴
+  // server.id
+  List<Long> fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(
+      User user);
 }

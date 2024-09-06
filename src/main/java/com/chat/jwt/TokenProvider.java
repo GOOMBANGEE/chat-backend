@@ -14,7 +14,10 @@ import io.jsonwebtoken.security.Keys;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -38,6 +41,8 @@ public class TokenProvider implements InitializingBean {
   private Key key;
 
   private static final String TOKEN_TYPE = "tokenType";
+  private static final String USER_ID = "userId";
+  private static final String SUB_SERVER = "subServer";
 
   public TokenProvider(@Value("${jwt.secret}") String secret,
       @Value("${jwt.access-token-expire-time}") long accessTokenExpireTime,
@@ -54,7 +59,12 @@ public class TokenProvider implements InitializingBean {
   }
 
   // Authentication 의 권한 정보를 이용해 토큰 생성
-  public String createToken(Authentication authentication, TokenType tokenType) {
+  public String createToken(
+      Authentication authentication,
+      TokenType tokenType,
+      Long userId,
+      List<Long> serverIdList
+  ) {
     // 로그인 시도 유저의 권한들
     String authorities = authentication.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
@@ -77,6 +87,10 @@ public class TokenProvider implements InitializingBean {
         .setSubject(authentication.getName())
         .claim(AUTHORITIES_KEY, authorities)
         .claim(TOKEN_TYPE, tokenType.name())
+        // userId
+        .claim(USER_ID, userId)
+        // 참여중인 서버 목록
+        .claim(SUB_SERVER, serverIdList)
         .setExpiration(expires)
         .compact();
   }
@@ -100,8 +114,17 @@ public class TokenProvider implements InitializingBean {
     if (authentication == null) {
       throw new UserException("USER:TOKEN_INVALID");
     }
+    Long userId = this.getUserIdFromToken(refreshToken);
+    List<Long> subServerFromToken = this.getSubServerFromToken(refreshToken);
+
+    String accessToken = createToken(
+        authentication,
+        TokenType.ACCESS_TOKEN,
+        userId,
+        subServerFromToken);
+
     return AccessTokenDto.builder()
-        .accessToken(createToken(authentication, TokenType.ACCESS_TOKEN))
+        .accessToken(accessToken)
         .build();
   }
 
@@ -135,10 +158,46 @@ public class TokenProvider implements InitializingBean {
     return new UsernamePasswordAuthenticationToken(principal, accessToken, authorities);
   }
 
-  private Claims parseClaims(String accessToken) {
+  // userId 가져오기
+  public Long getUserIdFromToken(String token) {
+    Claims claims = parseClaims(token);
+    Object userIdObj = claims.get(USER_ID);
+
+    if (userIdObj instanceof Integer integer) {
+      return integer.longValue();
+    } else if (userIdObj instanceof Long longValue) {
+      return longValue;
+    }
+    return null;
+  }
+
+  // 참여중인 serverId 리스트 가져오기
+  public List<Long> getSubServerFromToken(String token) {
+    Claims claims = parseClaims(token);
+    Object subServerObj = claims.get(SUB_SERVER);
+
+    if (!(subServerObj instanceof List<?> subServerList)) {
+      return Collections.emptyList();
+    }
+
+    return subServerList.stream()
+        .filter(Number.class::isInstance)
+        .map(serverId -> {
+          if (serverId instanceof Integer integer) {
+            return integer.longValue();
+          } else if (serverId instanceof Long longValue) {
+            return longValue;
+          }
+          return null;
+        })
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private Claims parseClaims(String token) {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build()
-          .parseClaimsJws(accessToken)
+          .parseClaimsJws(token)
           .getBody();
     } catch (ExpiredJwtException e) {
       return e.getClaims();

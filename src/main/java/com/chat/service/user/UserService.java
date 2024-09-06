@@ -31,6 +31,7 @@ import com.chat.dto.user.UserInfoForFriendWaitingListResponseDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
+import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.RoleRepository;
 import com.chat.repository.user.UserFriendRepository;
 import com.chat.repository.user.UserFriendTempRepository;
@@ -45,7 +46,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -56,7 +56,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -72,6 +71,7 @@ public class UserService {
   private final RoleRepository roleRepository;
   private final UserFriendRepository userFriendRepository;
   private final UserFriendTempRepository userFriendTempRepository;
+  private final ServerUserRelationRepository serverUserRelationRepository;
 
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final TokenProvider tokenProvider;
@@ -89,7 +89,6 @@ public class UserService {
   private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
   private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
   private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
-  private static final String USER_NOT_FRIEND = "USER:USER_NOT_FRIEND";
 
 
   private final SimpMessagingTemplate messagingTemplate;
@@ -246,10 +245,23 @@ public class UserService {
           .authenticate(authenticationToken);
       SecurityContextHolder.getContext().setAuthentication(authentication);
 
+      // 유저가 참여중인 서버의 id 리스트
+      List<Long> serverIdList = serverUserRelationRepository
+          .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+
       // 3. 인증 정보로 JWT 토큰 생성
       // 4. 토큰 발급
-      String accessToken = tokenProvider.createToken(authentication, TokenType.ACCESS_TOKEN);
-      String refreshToken = tokenProvider.createToken(authentication, TokenType.REFRESH_TOKEN);
+      Long userId = user.fetchUserIdForCreateToken();
+      String accessToken = tokenProvider.createToken(
+          authentication,
+          TokenType.ACCESS_TOKEN,
+          userId,
+          serverIdList);
+      String refreshToken = tokenProvider.createToken(
+          authentication,
+          TokenType.REFRESH_TOKEN,
+          userId,
+          serverIdList);
 
       return JwtTokenDto.builder()
           .accessToken(accessToken)

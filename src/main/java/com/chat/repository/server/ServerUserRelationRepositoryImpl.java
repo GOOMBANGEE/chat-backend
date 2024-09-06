@@ -31,7 +31,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .select(qServerUserRelation.server)
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
-        .where(userEq(user), serverIdEq(serverId), serverDeleteFalse())
+        .where(userEq(user), serverIdEq(serverId), logicDeleteFalse())
         .fetchFirst());
   }
 
@@ -43,8 +43,8 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return qServerUserRelation.server.id.eq(serverId);
   }
 
-  private BooleanExpression serverDeleteFalse() {
-    return qServerUserRelation.server.logicDelete.eq(Boolean.FALSE);
+  private BooleanExpression logicDeleteFalse() {
+    return qServerUserRelation.logicDelete.eq(Boolean.FALSE);
   }
 
   @Override
@@ -54,13 +54,13 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             qServerUserRelation.server.name))
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
-        .where(userEq(user), serverDeleteFalse())
+        .where(userEq(user), logicDeleteFalse())
         .fetch();
   }
 
   @Override
-  public List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(User user,
-      Server server) {
+  public List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(
+      User user, Server server) {
     return queryFactory
         .select(
             new QServerUserInfoDto(qServerUserRelation.user.id,
@@ -78,6 +78,18 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
 
   private BooleanExpression userDeleteFalse() {
     return qServerUserRelation.user.logicDelete.eq(Boolean.FALSE);
+  }
+
+  // 유저가 속해있는 모든 서버의 id 가져옴
+  // server.id
+  @Override
+  public List<Long> fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(
+      User user) {
+    return queryFactory
+        .select(qServerUserRelation.server.id)
+        .from(qServerUserRelation)
+        .where(userEq(user), logicDeleteFalse())
+        .fetch();
   }
 }
 

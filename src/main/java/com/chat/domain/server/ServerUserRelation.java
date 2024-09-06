@@ -48,4 +48,13 @@ public class ServerUserRelation {
   public void logicDelete() {
     this.logicDelete = true;
   }
+
+  public boolean isLogicDelete() {
+    return logicDelete;
+  }
+
+  public void reJoin() {
+    this.logicDelete = false;
+  }
+
 }

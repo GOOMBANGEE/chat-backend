@@ -15,5 +15,8 @@ public interface ServerUserRelationRepository extends
 
   Optional<ServerUserRelation> findServerUserRelationByUserAndServer(User user, Server server);
 
+  Optional<ServerUserRelation> findByUserAndServerAndLogicDeleteFalse(User user,
+      Server server);
+
   Optional<ServerUserRelation> findByServerAndOwnerFalseAndLogicDeleteFalse(Server server);
 }

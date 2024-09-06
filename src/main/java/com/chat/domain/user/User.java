@@ -125,4 +125,8 @@ public class User {
   public Long fetchUserIdForServerLeaveResponse() {
     return this.id;
   }
+
+  public Long fetchUserIdForCreateToken() {
+    return this.id;
+  }
 }
