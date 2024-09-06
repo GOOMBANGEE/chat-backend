@@ -1,6 +1,5 @@
 package com.chat.controller;
 
-import com.chat.dto.AccessTokenDto;
 import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.user.EmailCheckRequestDto;
@@ -16,7 +15,6 @@ import com.chat.dto.user.RecoverConfirmRequestDto;
 import com.chat.dto.user.RecoverEmailSendRequestDto;
 import com.chat.dto.user.RecoverRequestDto;
 import com.chat.dto.user.RecoverTokenCheckResponseDto;
-import com.chat.dto.user.RefreshRequestDto;
 import com.chat.dto.user.RegisterConfirmRequestDto;
 import com.chat.dto.user.RegisterEmailSendRequestDto;
 import com.chat.dto.user.RegisterRequestDto;
@@ -36,6 +34,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -103,24 +102,28 @@ public class UserController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<JwtTokenDto> login(
+  public ResponseEntity<EmptyResponseDto> login(
       @RequestBody @Valid LoginRequestDto requestDto) {
     JwtTokenDto jwtTokenDto = userService.login(requestDto);
-    return ResponseEntity.ok(jwtTokenDto);
+    return ResponseEntity.ok()
+        .header("Authorization", "Bearer " + jwtTokenDto.getAccessToken())
+        .header("Refresh-Token", jwtTokenDto.getRefreshToken())
+        .build();
   }
 
   // accessToken refresh
   @PostMapping("/refresh")
-  public ResponseEntity<AccessTokenDto> refresh(
-      @RequestBody @Valid RefreshRequestDto requestDto) {
-    String refreshToken = requestDto.getRefreshToken();
+  public ResponseEntity<EmptyResponseDto> refresh(
+      @RequestHeader("Refresh-Token") String refreshToken) {
     // refresh token 유효성 검사
     if (!tokenProvider.validateToken(refreshToken)) {
       throw new UserException(TOKEN_INVALID);
     }
     // refresh token으로 access token 재발급
-    AccessTokenDto accessTokenDto = tokenProvider.refreshAccessToken(refreshToken);
-    return ResponseEntity.ok(accessTokenDto);
+    String accessToken = tokenProvider.refreshAccessToken(refreshToken);
+    return ResponseEntity.ok()
+        .header("Authorization", "Bearer " + accessToken)
+        .build();
   }
 
   // 사용자정보 fetch

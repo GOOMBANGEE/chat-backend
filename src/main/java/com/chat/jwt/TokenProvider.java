@@ -1,7 +1,6 @@
 package com.chat.jwt;
 
 
-import com.chat.dto.AccessTokenDto;
 import com.chat.exception.UserException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -100,7 +99,7 @@ public class TokenProvider implements InitializingBean {
     REFRESH_TOKEN
   }
 
-  public AccessTokenDto refreshAccessToken(String refreshToken) {
+  public String refreshAccessToken(String refreshToken) {
     // 토큰 유효성 검사 및 토큰 종류 확인
     Claims claims = parseClaims(refreshToken);
     String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
@@ -117,15 +116,11 @@ public class TokenProvider implements InitializingBean {
     Long userId = this.getUserIdFromToken(refreshToken);
     List<Long> subServerFromToken = this.getSubServerFromToken(refreshToken);
 
-    String accessToken = createToken(
+    return createToken(
         authentication,
         TokenType.ACCESS_TOKEN,
         userId,
         subServerFromToken);
-
-    return AccessTokenDto.builder()
-        .accessToken(accessToken)
-        .build();
   }
 
   // jwtFilter에서 refreshToken으로 접근못하도록 막는 로직
