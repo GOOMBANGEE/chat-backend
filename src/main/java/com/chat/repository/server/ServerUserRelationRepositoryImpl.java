@@ -31,7 +31,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .select(qServerUserRelation.server)
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
-        .where(userEq(user), serverIdEq(serverId), logicDeleteFalse())
+        .where(userEq(user), serverIdEq(serverId), serverDeleteFalse(), logicDeleteFalse())
         .fetchFirst());
   }
 
@@ -41,6 +41,11 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
 
   private BooleanExpression serverIdEq(Long serverId) {
     return qServerUserRelation.server.id.eq(serverId);
+  }
+
+
+  private BooleanExpression serverDeleteFalse() {
+    return qServerUserRelation.server.logicDelete.eq(Boolean.FALSE);
   }
 
   private BooleanExpression logicDeleteFalse() {
@@ -54,7 +59,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             qServerUserRelation.server.name))
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
-        .where(userEq(user), logicDeleteFalse())
+        .where(userEq(user), serverDeleteFalse(), logicDeleteFalse())
         .fetch();
   }
 
@@ -88,7 +93,8 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return queryFactory
         .select(qServerUserRelation.server.id)
         .from(qServerUserRelation)
-        .where(userEq(user), logicDeleteFalse())
+        .join(qServerUserRelation.server, qServer).fetchJoin()
+        .where(userEq(user), serverDeleteFalse(), logicDeleteFalse())
         .fetch();
   }
 }
