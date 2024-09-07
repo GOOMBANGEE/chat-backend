@@ -1,7 +1,6 @@
 package com.chat.jwt;
 
 
-import com.chat.exception.UserException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -10,6 +9,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,9 +40,13 @@ public class TokenProvider implements InitializingBean {
   private final long refreshTokenExpireTime;
   private Key key;
 
+  private static final String AUTHORIZATION_HEADER = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer";
   private static final String TOKEN_TYPE = "tokenType";
   private static final String USER_ID = "userId";
   private static final String SUB_SERVER = "subServer";
+
+  private static final String INVALID_TOKEN = "INVALID_TOKEN";
 
   public TokenProvider(@Value("${jwt.secret}") String secret,
       @Value("${jwt.access-token-expire-time}") long accessTokenExpireTime,
@@ -77,7 +82,7 @@ public class TokenProvider implements InitializingBean {
     } else if (tokenType == TokenType.REFRESH_TOKEN) {
       expires = new Date(now + refreshTokenExpireTime);
     } else {
-      throw new IllegalArgumentException("Invalid token type");
+      throw new IllegalArgumentException(INVALID_TOKEN);
     }
 
     // Create Token
@@ -105,13 +110,13 @@ public class TokenProvider implements InitializingBean {
     String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
 
     if (tokenTypeClaim == null || !tokenTypeClaim.equals(TokenType.REFRESH_TOKEN.name())) {
-      throw new UserException("USER:TOKEN_INVALID");
+      throw new IllegalArgumentException(INVALID_TOKEN);
     }
 
     // Access Token 생성
     Authentication authentication = getAuthentication(refreshToken);
     if (authentication == null) {
-      throw new UserException("USER:TOKEN_INVALID");
+      throw new IllegalArgumentException(INVALID_TOKEN);
     }
     Long userId = this.getUserIdFromToken(refreshToken);
     List<Long> subServerFromToken = this.getSubServerFromToken(refreshToken);
@@ -121,6 +126,31 @@ public class TokenProvider implements InitializingBean {
         TokenType.ACCESS_TOKEN,
         userId,
         subServerFromToken);
+  }
+
+  public String regenerateRefreshToken(
+      @NonNull HttpServletRequest request,
+      List<Long> subServerList) {
+    String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+    String accessToken = bearerToken.substring(BEARER_PREFIX.length()).trim();
+
+    Claims claims = parseClaims(accessToken);
+    String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
+    if (tokenTypeClaim == null || !tokenTypeClaim.equals(TokenType.ACCESS_TOKEN.name())) {
+      throw new IllegalArgumentException(INVALID_TOKEN);
+    }
+
+    Authentication authentication = getAuthentication(accessToken);
+    if (authentication == null) {
+      throw new IllegalArgumentException(INVALID_TOKEN);
+    }
+    Long userId = this.getUserIdFromToken(accessToken);
+    return createToken(
+        authentication,
+        TokenType.REFRESH_TOKEN,
+        userId,
+        subServerList
+    );
   }
 
   // jwtFilter에서 refreshToken으로 접근못하도록 막는 로직

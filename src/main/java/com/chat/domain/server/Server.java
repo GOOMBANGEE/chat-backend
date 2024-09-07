@@ -73,6 +73,15 @@ public class Server {
     this.code = code;
   }
 
+  public void userJoin() {
+    this.userCount += 1;
+  }
+
+  public Long userLeave() {
+    this.userCount -= 1;
+    return this.userCount;
+  }
+
   public boolean checkName(String name) {
     return this.name.equals(name);
   }

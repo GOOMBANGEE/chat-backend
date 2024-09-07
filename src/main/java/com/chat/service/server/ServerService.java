@@ -19,6 +19,7 @@ import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import com.chat.exception.ServerException;
+import com.chat.jwt.TokenProvider;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
@@ -26,11 +27,14 @@ import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -47,6 +51,7 @@ public class ServerService {
   private final UserRepository userRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
   private final ChatRepository chatRepository;
+  private final TokenProvider tokenProvider;
 
   private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -65,7 +70,9 @@ public class ServerService {
 
   // 서버 생성
   @Transactional
-  public ServerCreateResponseDto create(ServerCreateRequestDto requestDto) {
+  public Pair<ServerCreateResponseDto, String> create(
+      HttpServletRequest request,
+      ServerCreateRequestDto requestDto) {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -92,10 +99,17 @@ public class ServerService {
     serverUserRelationRepository.save(serverUserRelation);
 
     Long id = server.getServerIdForServerCreateResponse();
-    return ServerCreateResponseDto.builder()
+    ServerCreateResponseDto responseDto = ServerCreateResponseDto.builder()
         .id(id)
         .name(name)
         .build();
+
+    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+    String responseRefreshToken = tokenProvider.regenerateRefreshToken(request, serverIdList);
+    return Pair.of(responseDto, responseRefreshToken);
+
   }
 
   // 참여중인 서버 목록
@@ -127,8 +141,8 @@ public class ServerService {
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     // 서버의 주인인지 확인
-    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-            user, server)
+    ServerUserRelation serverUserRelation = serverUserRelationRepository
+        .findByUserAndServerAndLogicDeleteFalse(user, server)
         .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
 
     // 주인이 아닌경우 권한없음
@@ -156,7 +170,7 @@ public class ServerService {
 
   // 서버 입장
   @Transactional
-  public ServerJoinResponseDto join(String code) {
+  public Pair<ServerJoinResponseDto, String> join(HttpServletRequest request, String code) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -166,18 +180,32 @@ public class ServerService {
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
-    boolean isAlreadyJoined = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-        user, server).isPresent();
-    if (isAlreadyJoined) {
-      throw new ServerException(SERVER_ALREADY_JOINED);
+    Optional<ServerUserRelation> serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
+        user, server);
+    // serverUserRelation값이 존재하는가?
+    if (serverUserRelation.isPresent()) {
+      // logicDelete 상태이면 재입장
+      if (serverUserRelation.get().isLogicDelete()) {
+        serverUserRelation.get().reJoin();
+        serverUserRelationRepository.save(serverUserRelation.get());
+      } else {
+        // logicDelete == false -> 이미 참여중 에러
+        throw new ServerException(SERVER_ALREADY_JOINED);
+      }
     }
 
-    // 서버 입장 저장
-    ServerUserRelation serverUserRelation = ServerUserRelation.builder()
-        .server(server)
-        .user(user)
-        .build();
-    serverUserRelationRepository.save(serverUserRelation);
+    // 이전에 가입하지 않았던 새로운 유저 입장
+    if (serverUserRelation.isEmpty()) {
+      ServerUserRelation newServerUserRelation = ServerUserRelation.builder()
+          .server(server)
+          .user(user)
+          .build();
+      serverUserRelationRepository.save(newServerUserRelation);
+    }
+
+    // server에 userCount +1
+    server.userJoin();
+    serverRepository.save(server);
 
     // return 입장한 서버 id
     ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse();
@@ -194,14 +222,20 @@ public class ServerService {
     chatRepository.save(chat);
 
     Long serverId = responseDto.getId();
-    String serverUrl = SUB_SERVER + serverId;
     UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
     Long userId = userInfoDto.getId();
     String username = userInfoDto.getUsername();
+
+    String serverUrl = SUB_SERVER + serverId;
     MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
 
-    return responseDto;
+    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+    String responseRefreshToken = tokenProvider.regenerateRefreshToken(request, serverIdList);
+
+    return Pair.of(responseDto, responseRefreshToken);
   }
 
   // 서버 초대코드 조회
@@ -215,8 +249,9 @@ public class ServerService {
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
-    boolean isAlreadyJoined = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-        user, server).isPresent();
+    boolean isAlreadyJoined = serverUserRelationRepository
+        .findByUserAndServerAndLogicDeleteFalse(user, server)
+        .isPresent();
     if (isAlreadyJoined) {
       throw new ServerException(SERVER_ALREADY_JOINED);
     }
@@ -279,7 +314,7 @@ public class ServerService {
   }
 
   @Transactional
-  public void leave(Long serverId) {
+  public String leave(HttpServletRequest request, Long serverId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -291,8 +326,9 @@ public class ServerService {
     Server server = serverUserRelationRepository.findServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
-    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-        user, server).orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+    ServerUserRelation serverUserRelation = serverUserRelationRepository
+        .findByUserAndServerAndLogicDeleteFalse(user, server)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
 
     // 서버 주인인 경우 유저가 남아있는지 체크
     if (serverUserRelation.isOwner() &&
@@ -302,7 +338,14 @@ public class ServerService {
       throw new ServerException(SERVER_NOT_EMPTY);
     }
 
+    // 유저가 모두 나간경우 server 삭제처리
+    Long userCount = server.userLeave();
+    if (userCount == 0) {
+      server.logicDelete();
+      serverRepository.save(server);
+    }
     serverUserRelation.logicDelete();
+    serverRepository.save(server);
     serverUserRelationRepository.save(serverUserRelation);
 
     String serverUrl = SUB_SERVER + serverId;
@@ -313,11 +356,18 @@ public class ServerService {
         .leave(true)
         .build();
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+
+    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+
+    return tokenProvider.regenerateRefreshToken(request, serverIdList);
   }
 
   // 서버 삭제
   @Transactional
-  public void delete(Long serverId, ServerDeleteRequestDto requestDto) {
+  public String delete(HttpServletRequest request, Long serverId,
+      ServerDeleteRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -333,8 +383,9 @@ public class ServerService {
     }
 
     // 서버의 주인인지 확인
-    ServerUserRelation serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
-        user, server).orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+    ServerUserRelation serverUserRelation = serverUserRelationRepository
+        .findByUserAndServerAndLogicDeleteFalse(user, server)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
 
     // 주인이 아닌경우 권한없음
     if (serverUserRelation.isOwner()) {
@@ -348,7 +399,12 @@ public class ServerService {
           .serverId(serverId)
           .build();
       messagingTemplate.convertAndSend(serverUrl, newMessageDto);
-      return;
+
+      // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
+      List<Long> serverIdList = serverUserRelationRepository
+          .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+
+      return tokenProvider.regenerateRefreshToken(request, serverIdList);
     }
     throw new ServerException(SERVER_NOT_PERMITTED);
   }
@@ -367,9 +423,12 @@ public class ServerService {
     List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationRepository.fetchServerUserInfoDtoListByUserAndServer(
         user, server);
 
+    if (serverUserInfoDtoList.isEmpty()) {
+      throw new ServerException(SERVER_NOT_PARTICIPATED);
+    }
+
     return ServerUserListResponseDto.builder()
         .serverUserInfoDtoList(serverUserInfoDtoList)
         .build();
-
   }
 }

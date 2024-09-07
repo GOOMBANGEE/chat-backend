@@ -71,7 +71,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             new QServerUserInfoDto(qServerUserRelation.user.id,
                 qServerUserRelation.user.username))
         .from(qServerUserRelation)
-        .join(qServerUserRelation.server, qServer)
         .join(qServerUserRelation.user, qUser)
         .where(serverEq(server), userDeleteFalse())
         .fetch();
@@ -93,7 +92,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return queryFactory
         .select(qServerUserRelation.server.id)
         .from(qServerUserRelation)
-        .join(qServerUserRelation.server, qServer).fetchJoin()
         .where(userEq(user), serverDeleteFalse(), logicDeleteFalse())
         .fetch();
   }
