@@ -4,6 +4,7 @@ import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
 import com.chat.dto.server.ServerDeleteRequestDto;
+import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
@@ -51,9 +53,16 @@ public class ServerController {
 
   // 참여중인 서버 목록
   @GetMapping("/list")
-  public ResponseEntity<ServerListResponseDto> list() {
-    ServerListResponseDto responseDto = serverService.list();
-    return ResponseEntity.ok(responseDto);
+  public ResponseEntity<ServerListResponseDto> list(HttpServletRequest request) {
+    Pair<List<ServerInfoDto>, String> responsePair = serverService.list(request);
+
+    ServerListResponseDto serverListResponseDto = ServerListResponseDto.builder()
+        .serverList(responsePair.getLeft())
+        .build();
+    String responseRefreshToken = responsePair.getRight();
+    return ResponseEntity.ok()
+        .header(REFRESH_TOKEN, responseRefreshToken)
+        .body(serverListResponseDto);
   }
 
   // 서버 설정변경

@@ -13,7 +13,6 @@ import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
-import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
@@ -113,7 +112,7 @@ public class ServerService {
   }
 
   // 참여중인 서버 목록
-  public ServerListResponseDto list() {
+  public Pair<List<ServerInfoDto>, String> list(HttpServletRequest request) {
     // 해당 유저가 속한 서버 리턴
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -122,9 +121,14 @@ public class ServerService {
     List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository.fetchServerInfoDtoListByUser(
         user);
 
-    return ServerListResponseDto.builder()
-        .serverList(serverInfoDtoList)
-        .build();
+    List<Long> subServerListFromDB = serverInfoDtoList.stream().map(ServerInfoDto::getId).toList();
+    if (!tokenProvider.checkTokenSubServerList(request, subServerListFromDB)) {
+      // token와 db가 다른 subServerlist를 가질때, refreshToken 재생성하여 반환
+      String responseRefreshToken = tokenProvider.regenerateRefreshToken(request,
+          subServerListFromDB);
+      return Pair.of(serverInfoDtoList, responseRefreshToken);
+    }
+    return Pair.of(serverInfoDtoList, null);
   }
 
   // 서버 설정변경

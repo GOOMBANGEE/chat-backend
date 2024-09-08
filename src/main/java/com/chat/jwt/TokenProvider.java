@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -151,6 +152,27 @@ public class TokenProvider implements InitializingBean {
         userId,
         subServerList
     );
+  }
+
+  public boolean checkTokenSubServerList(HttpServletRequest request,
+      List<Long> subServerListFromDB) {
+    String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+    String accessToken = bearerToken.substring(BEARER_PREFIX.length()).trim();
+
+    Claims claims = parseClaims(accessToken);
+    String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
+    if (tokenTypeClaim == null || !tokenTypeClaim.equals(TokenType.ACCESS_TOKEN.name())) {
+      throw new IllegalArgumentException(INVALID_TOKEN);
+    }
+    Authentication authentication = getAuthentication(accessToken);
+    if (authentication == null) {
+      throw new IllegalArgumentException(INVALID_TOKEN);
+    }
+
+    List<Long> subServerListFromToken = this.getSubServerFromToken(accessToken);
+    
+    return new HashSet<>(subServerListFromDB).containsAll(subServerListFromToken) &&
+        new HashSet<>(subServerListFromToken).containsAll(subServerListFromDB);
   }
 
   // jwtFilter에서 refreshToken으로 접근못하도록 막는 로직
