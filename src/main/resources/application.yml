@@ -1,0 +1,79 @@
+server:
+  port: ${SERVER_PORT}
+  base-url: ${SERVER_BASE_URL}
+  front-url: ${SERVER_FRONT_URL}
+  cors-urls: ${SERVER_CORS_URLS}
+  pepper: ${SERVER_PEPPER}
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    defer-datasource-initialization: true
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      properties:
+        hibernate:
+          format_sql: ${SPRING_JPA_HIBERNATE_PROPERTIES_HIBERNATE_FORMAT_SQL}
+          show_sql: ${SPRING_JPA_HIBERNATE_PROPERTIES_HIBERNATE_SHOW_SQL}
+  sql:
+    init:
+      mode: always
+
+  mail:
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED}
+          connectiontimeout: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT}
+          timeout: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT}
+          writetimeout: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT}
+    default-encoding: ${SPRING_MAIL_DEFAULT_ENCODING}
+    auth-code-expiration-millis: ${SPRING_MAIL_AUTH_CODE_EXPIRATION_MILLIS}
+
+jwt:
+  header: ${JWT_HEADER}
+  secret: ${JWT_SECRET}
+  access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
+  refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT}
+
+sentry:
+  dsn: ${SENTRY_DSN}
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE}
+  exception-resolver-order: ${SENTRY_EXCEPTION_RESOLVER_ORDER}
+  max-request-body-size: ${SENTRY_MAX_REQUEST_BODY_SIZE}
+  enable-tracing: ${SENTRY_ENABLE_TRACING}
+  send-default-pii: ${SENTRY_SEND_DEFAULT_PII}
+  environment: ${SENTRY_ENVIRONMENT}
+
+# actuator
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT}
+  health:
+    rabbit:
+      enabled: ${MANAGEMENT_HEALTH_RABBIT_ENABLED}
+  endpoints:
+    web:
+      base-path: ${MANAGEMENT_ENDPOINTS_WEB_BASE_PATH}
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE}
+    health:
+      show-details: ${MANAGEMENT_ENDPOINTS_HEALTH_SHOW_DETAILS}

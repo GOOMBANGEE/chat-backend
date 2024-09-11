@@ -5,7 +5,7 @@
 .DS_STORE
 
 # application
-application.yml
+.env*
 application-local.yml
 application-prod.yml
 
