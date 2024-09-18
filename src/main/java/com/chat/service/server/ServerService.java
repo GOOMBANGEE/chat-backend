@@ -1,11 +1,16 @@
 package com.chat.service.server;
 
 import com.chat.domain.Chat;
+import com.chat.domain.category.Category;
+import com.chat.domain.channel.Channel;
 import com.chat.domain.server.Server;
+import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
+import com.chat.dto.category.CategoryInfoDto;
+import com.chat.dto.channel.ChannelInfoDto;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
 import com.chat.dto.server.ServerDeleteRequestDto;
@@ -19,9 +24,15 @@ import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import com.chat.exception.ServerException;
-import com.chat.jwt.TokenProvider;
+import com.chat.repository.category.CategoryRepository;
+import com.chat.repository.category.CategoryServerRoleRelationRepository;
+import com.chat.repository.category.CategoryUserRelationRepository;
+import com.chat.repository.channel.ChannelRepository;
+import com.chat.repository.channel.ChannelServerRoleRelationRepository;
+import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
+import com.chat.repository.server.ServerRoleUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -29,8 +40,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +63,8 @@ public class ServerService {
   private final UserRepository userRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
   private final ChatRepository chatRepository;
-  private final TokenProvider tokenProvider;
+  private final CategoryRepository categoryRepository;
+  private final ChannelRepository channelRepository;
 
   private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -62,6 +77,11 @@ public class ServerService {
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
   private final ObjectMapper mapper = new ObjectMapper();
+  private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
+  private final ServerRoleUserRelationRepository serverRoleUserRelationRepository;
+  private final CategoryUserRelationRepository categoryUserRelationRepository;
+  private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -95,10 +115,39 @@ public class ServerService {
     serverRepository.save(server);
     serverUserRelationRepository.save(serverUserRelation);
 
+    // 기본 카테고리 생성
+    Category category = Category.builder()
+        .name("채팅 채널")
+        .displayOrder(1024.0)
+        .open(true)
+        .logicDelete(false)
+        .server(server)
+        .build();
+    categoryRepository.save(category);
+
+    // 기본채널 생성
+    Channel channel = Channel.builder()
+        .name("일반")
+        .displayOrder(1024.0)
+        .open(true)
+        .logicDelete(false)
+        .server(server)
+        .category(category)
+        .build();
+    channelRepository.save(channel);
+
     Long id = server.getServerIdForServerCreateResponse();
+    Long categoryId = category.getCategoryIdForServerCreateResponse();
+    Long channelId = channel.getChannelIdForServerCreateResponse();
     return ServerCreateResponseDto.builder()
         .id(id)
         .name(name)
+        .categoryId(categoryId)
+        .categoryName("채팅 채널")
+        .categoryDisplayOrder(1024.0)
+        .channelId(channelId)
+        .channelName("일반")
+        .channelDisplayOrder(1024.0)
         .build();
   }
 
@@ -109,11 +158,46 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
 
-    List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository.fetchServerInfoDtoListByUser(
-        user);
+    List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository
+        .fetchServerInfoDtoListByUser(user);
+    List<ServerRole> serverRoleList = serverRoleUserRelationRepository
+        .fetchServerRoleListByUser(user);
+    List<Long> serverIdList = serverInfoDtoList.stream()
+        .map(ServerInfoDto::getId)
+        .toList();
+
+    // 유저가 접근할 권한이 있는 카테고리 + open category
+    List<CategoryInfoDto> categoryInfoDtoListFromCategoryOpen = categoryRepository
+        .fetchCategoryInfoDtoListByServerIdList(serverIdList);
+    List<CategoryInfoDto> categoryInfoDtoListFromCategoryServerRoleRelation = categoryServerRoleRelationRepository
+        .fetchCategoryInfoDtoListByServerRoleList(serverRoleList);
+    List<CategoryInfoDto> categoryInfoDtoListFromCategoryUserRelation = categoryUserRelationRepository
+        .fetchCategoryInfoDtoListByUser(user);
+    // set으로 중복 제거
+    Set<CategoryInfoDto> categoryInfoDtoSet = new HashSet<>(
+        categoryInfoDtoListFromCategoryOpen);
+    categoryInfoDtoSet.addAll(categoryInfoDtoListFromCategoryServerRoleRelation);
+    categoryInfoDtoSet.addAll(categoryInfoDtoListFromCategoryUserRelation);
+    List<CategoryInfoDto> mergedCategoryInfoDtoList = new ArrayList<>(categoryInfoDtoSet);
+
+    // 유저가 접근할 권한이 있는 채널 + open channel
+    List<ChannelInfoDto> channelInfoDtoListFromChannelOpen = channelRepository
+        .fetchChannelInfoDtoListByServerIdList(serverIdList);
+    List<ChannelInfoDto> channelInfoDtoListFromChannelServerRoleRelation = channelServerRoleRelationRepository
+        .fetchChannelInfoDtoListByServerRoleList(serverRoleList);
+    List<ChannelInfoDto> channelInfoDtoListFromChannelUserRelation = channelUserRelationRepository
+        .fetchChannelInfoDtoListByUser(user);
+    // set으로 중복 제거
+    Set<ChannelInfoDto> channelInfoDtoSet = new HashSet<>(
+        channelInfoDtoListFromChannelOpen);
+    channelInfoDtoSet.addAll(channelInfoDtoListFromChannelServerRoleRelation);
+    channelInfoDtoSet.addAll(channelInfoDtoListFromChannelUserRelation);
+    List<ChannelInfoDto> mergedChannelInfoDtoList = new ArrayList<>(channelInfoDtoSet);
 
     return ServerListResponseDto.builder()
         .serverList(serverInfoDtoList)
+        .categoryList(mergedCategoryInfoDtoList)
+        .channelList(mergedChannelInfoDtoList)
         .build();
   }
 

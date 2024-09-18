@@ -1,5 +1,7 @@
 package com.chat.dto.server;
 
+import com.chat.dto.category.CategoryInfoDto;
+import com.chat.dto.channel.ChannelInfoDto;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,8 +14,15 @@ public class ServerListResponseDto {
 
   private List<ServerInfoDto> serverList;
 
+  private List<CategoryInfoDto> categoryList;
+
+  private List<ChannelInfoDto> channelList;
+
   @Builder
-  public ServerListResponseDto(List<ServerInfoDto> serverList) {
+  public ServerListResponseDto(List<ServerInfoDto> serverList, List<CategoryInfoDto> categoryList,
+      List<ChannelInfoDto> channelList) {
     this.serverList = serverList;
+    this.categoryList = categoryList;
+    this.channelList = channelList;
   }
 }

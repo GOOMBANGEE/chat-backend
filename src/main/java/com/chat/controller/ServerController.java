@@ -4,7 +4,6 @@ import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
 import com.chat.dto.server.ServerDeleteRequestDto;
-import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
@@ -13,12 +12,9 @@ import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.service.server.ServerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,29 +36,18 @@ public class ServerController {
   // 서버 생성
   @PostMapping("/create")
   public ResponseEntity<ServerCreateResponseDto> create(
-      HttpServletRequest request,
       @RequestBody @Valid ServerCreateRequestDto requestDto) {
-    Pair<ServerCreateResponseDto, String> responsePair = serverService.create(request, requestDto);
-
-    ServerCreateResponseDto responseDto = responsePair.getLeft();
-    String responseRefreshToken = responsePair.getRight();
+    ServerCreateResponseDto responseDto = serverService.create(requestDto);
     return ResponseEntity.ok()
-        .header(REFRESH_TOKEN, responseRefreshToken)
         .body(responseDto);
   }
 
   // 참여중인 서버 목록
   @GetMapping("/list")
-  public ResponseEntity<ServerListResponseDto> list(HttpServletRequest request) {
-    Pair<List<ServerInfoDto>, String> responsePair = serverService.list(request);
-
-    ServerListResponseDto serverListResponseDto = ServerListResponseDto.builder()
-        .serverList(responsePair.getLeft())
-        .build();
-    String responseRefreshToken = responsePair.getRight();
+  public ResponseEntity<ServerListResponseDto> list() {
+    ServerListResponseDto responseDto = serverService.list();
     return ResponseEntity.ok()
-        .header(REFRESH_TOKEN, responseRefreshToken)
-        .body(serverListResponseDto);
+        .body(responseDto);
   }
 
   // 서버 설정변경
@@ -80,15 +65,11 @@ public class ServerController {
   // 서버 입장
   @PostMapping("/{code}/join")
   public ResponseEntity<ServerJoinResponseDto> join(
-      HttpServletRequest request,
       @NotNull(message = SERVER_INVALID)
       @PathVariable("code")
       String code) {
-    Pair<ServerJoinResponseDto, String> responsePair = serverService.join(request, code);
-    ServerJoinResponseDto responseDto = responsePair.getLeft();
-    String responseRefreshToken = responsePair.getRight();
+    ServerJoinResponseDto responseDto = serverService.join(code);
     return ResponseEntity.ok()
-        .header(REFRESH_TOKEN, responseRefreshToken)
         .body(responseDto);
   }
 
@@ -115,29 +96,23 @@ public class ServerController {
   // 서버 나가기
   @PostMapping("/{serverId}/leave")
   public ResponseEntity<EmptyResponseDto> leave(
-      HttpServletRequest request,
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
       Long serverId) {
-    String responseRefreshToken = serverService.leave(request, serverId);
-    return ResponseEntity.ok()
-        .header(REFRESH_TOKEN, responseRefreshToken)
-        .build();
+    serverService.leave(serverId);
+    return ResponseEntity.ok(null);
   }
 
 
   // 서버 삭제
   @PostMapping("/{serverId}/delete")
   public ResponseEntity<EmptyResponseDto> delete(
-      HttpServletRequest request,
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
       Long serverId,
       @RequestBody @Valid ServerDeleteRequestDto requestDto) {
-    String responseRefreshToken = serverService.delete(request, serverId, requestDto);
-    return ResponseEntity.ok()
-        .header(REFRESH_TOKEN, responseRefreshToken)
-        .build();
+    serverService.delete(serverId, requestDto);
+    return ResponseEntity.ok(null);
   }
 
   // 서버 유저 목록
