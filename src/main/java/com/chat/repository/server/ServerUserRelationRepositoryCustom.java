@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface ServerUserRelationRepositoryCustom {
 
-  Optional<Server> findServerByUserAndServerId(User user, Long serverId);
+  Optional<Server> fetchServerByUserAndServerId(User user, Long serverId);
 
   List<ServerInfoDto> fetchServerInfoDtoListByUser(User user);
 
@@ -18,6 +18,6 @@ public interface ServerUserRelationRepositoryCustom {
 
   // 유저가 속해있는 모든 서버의 id 가져옴
   // server.id
-  List<Long> fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(
+  List<Long> fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(
       User user);
 }

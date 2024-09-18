@@ -26,7 +26,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   QUser qUser = QUser.user;
 
   @Override
-  public Optional<Server> findServerByUserAndServerId(User user, Long serverId) {
+  public Optional<Server> fetchServerByUserAndServerId(User user, Long serverId) {
     return Optional.ofNullable(queryFactory
         .select(qServerUserRelation.server)
         .from(qServerUserRelation)
@@ -68,8 +68,10 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
       User user, Server server) {
     return queryFactory
         .select(
-            new QServerUserInfoDto(qServerUserRelation.user.id,
-                qServerUserRelation.user.username))
+            new QServerUserInfoDto(
+                qServerUserRelation.user.id,
+                qServerUserRelation.user.username,
+                qServerUserRelation.user.online))
         .from(qServerUserRelation)
         .join(qServerUserRelation.user, qUser)
         .where(serverEq(server), userDeleteFalse())
@@ -87,7 +89,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   // 유저가 속해있는 모든 서버의 id 가져옴
   // server.id
   @Override
-  public List<Long> fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(
+  public List<Long> fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(
       User user) {
     return queryFactory
         .select(qServerUserRelation.server.id)
@@ -96,4 +98,3 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .fetch();
   }
 }
-

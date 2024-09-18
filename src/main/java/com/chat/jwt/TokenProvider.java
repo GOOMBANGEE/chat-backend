@@ -9,17 +9,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,11 +35,8 @@ public class TokenProvider implements InitializingBean {
   private final long refreshTokenExpireTime;
   private Key key;
 
-  private static final String AUTHORIZATION_HEADER = "Authorization";
-  private static final String BEARER_PREFIX = "Bearer";
   private static final String TOKEN_TYPE = "tokenType";
   private static final String USER_ID = "userId";
-  private static final String SUB_SERVER = "subServer";
 
   private static final String INVALID_TOKEN = "INVALID_TOKEN";
 
@@ -67,8 +58,7 @@ public class TokenProvider implements InitializingBean {
   public String createToken(
       Authentication authentication,
       TokenType tokenType,
-      Long userId,
-      List<Long> serverIdList
+      Long userId
   ) {
     // 로그인 시도 유저의 권한들
     String authorities = authentication.getAuthorities().stream()
@@ -94,8 +84,6 @@ public class TokenProvider implements InitializingBean {
         .claim(TOKEN_TYPE, tokenType.name())
         // userId
         .claim(USER_ID, userId)
-        // 참여중인 서버 목록
-        .claim(SUB_SERVER, serverIdList)
         .setExpiration(expires)
         .compact();
   }
@@ -120,59 +108,11 @@ public class TokenProvider implements InitializingBean {
       throw new IllegalArgumentException(INVALID_TOKEN);
     }
     Long userId = this.getUserIdFromToken(refreshToken);
-    List<Long> subServerFromToken = this.getSubServerFromToken(refreshToken);
 
     return createToken(
         authentication,
         TokenType.ACCESS_TOKEN,
-        userId,
-        subServerFromToken);
-  }
-
-  public String regenerateRefreshToken(
-      @NonNull HttpServletRequest request,
-      List<Long> subServerList) {
-    String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-    String accessToken = bearerToken.substring(BEARER_PREFIX.length()).trim();
-
-    Claims claims = parseClaims(accessToken);
-    String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
-    if (tokenTypeClaim == null || !tokenTypeClaim.equals(TokenType.ACCESS_TOKEN.name())) {
-      throw new IllegalArgumentException(INVALID_TOKEN);
-    }
-
-    Authentication authentication = getAuthentication(accessToken);
-    if (authentication == null) {
-      throw new IllegalArgumentException(INVALID_TOKEN);
-    }
-    Long userId = this.getUserIdFromToken(accessToken);
-    return createToken(
-        authentication,
-        TokenType.REFRESH_TOKEN,
-        userId,
-        subServerList
-    );
-  }
-
-  public boolean checkTokenSubServerList(HttpServletRequest request,
-      List<Long> subServerListFromDB) {
-    String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-    String accessToken = bearerToken.substring(BEARER_PREFIX.length()).trim();
-
-    Claims claims = parseClaims(accessToken);
-    String tokenTypeClaim = (String) claims.get(TOKEN_TYPE);
-    if (tokenTypeClaim == null || !tokenTypeClaim.equals(TokenType.ACCESS_TOKEN.name())) {
-      throw new IllegalArgumentException(INVALID_TOKEN);
-    }
-    Authentication authentication = getAuthentication(accessToken);
-    if (authentication == null) {
-      throw new IllegalArgumentException(INVALID_TOKEN);
-    }
-
-    List<Long> subServerListFromToken = this.getSubServerFromToken(accessToken);
-    
-    return new HashSet<>(subServerListFromDB).containsAll(subServerListFromToken) &&
-        new HashSet<>(subServerListFromToken).containsAll(subServerListFromDB);
+        userId);
   }
 
   // jwtFilter에서 refreshToken으로 접근못하도록 막는 로직
@@ -216,29 +156,6 @@ public class TokenProvider implements InitializingBean {
       return longValue;
     }
     return null;
-  }
-
-  // 참여중인 serverId 리스트 가져오기
-  public List<Long> getSubServerFromToken(String token) {
-    Claims claims = parseClaims(token);
-    Object subServerObj = claims.get(SUB_SERVER);
-
-    if (!(subServerObj instanceof List<?> subServerList)) {
-      return Collections.emptyList();
-    }
-
-    return subServerList.stream()
-        .filter(Number.class::isInstance)
-        .map(serverId -> {
-          if (serverId instanceof Integer integer) {
-            return integer.longValue();
-          } else if (serverId instanceof Long longValue) {
-            return longValue;
-          }
-          return null;
-        })
-        .filter(Objects::nonNull)
-        .toList();
   }
 
   private Claims parseClaims(String token) {

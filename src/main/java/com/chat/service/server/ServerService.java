@@ -13,6 +13,7 @@ import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
+import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
@@ -26,14 +27,12 @@ import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -69,8 +68,7 @@ public class ServerService {
 
   // 서버 생성
   @Transactional
-  public Pair<ServerCreateResponseDto, String> create(
-      HttpServletRequest request,
+  public ServerCreateResponseDto create(
       ServerCreateRequestDto requestDto) {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
@@ -98,21 +96,14 @@ public class ServerService {
     serverUserRelationRepository.save(serverUserRelation);
 
     Long id = server.getServerIdForServerCreateResponse();
-    ServerCreateResponseDto responseDto = ServerCreateResponseDto.builder()
+    return ServerCreateResponseDto.builder()
         .id(id)
         .name(name)
         .build();
-
-    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
-    List<Long> serverIdList = serverUserRelationRepository
-        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
-    String responseRefreshToken = tokenProvider.regenerateRefreshToken(request, serverIdList);
-    return Pair.of(responseDto, responseRefreshToken);
-
   }
 
   // 참여중인 서버 목록
-  public Pair<List<ServerInfoDto>, String> list(HttpServletRequest request) {
+  public ServerListResponseDto list() {
     // 해당 유저가 속한 서버 리턴
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -121,14 +112,9 @@ public class ServerService {
     List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository.fetchServerInfoDtoListByUser(
         user);
 
-    List<Long> subServerListFromDB = serverInfoDtoList.stream().map(ServerInfoDto::getId).toList();
-    if (!tokenProvider.checkTokenSubServerList(request, subServerListFromDB)) {
-      // token와 db가 다른 subServerlist를 가질때, refreshToken 재생성하여 반환
-      String responseRefreshToken = tokenProvider.regenerateRefreshToken(request,
-          subServerListFromDB);
-      return Pair.of(serverInfoDtoList, responseRefreshToken);
-    }
-    return Pair.of(serverInfoDtoList, null);
+    return ServerListResponseDto.builder()
+        .serverList(serverInfoDtoList)
+        .build();
   }
 
   // 서버 설정변경
@@ -174,7 +160,7 @@ public class ServerService {
 
   // 서버 입장
   @Transactional
-  public Pair<ServerJoinResponseDto, String> join(HttpServletRequest request, String code) {
+  public ServerJoinResponseDto join(String code) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -234,12 +220,7 @@ public class ServerService {
     MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
 
-    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
-    List<Long> serverIdList = serverUserRelationRepository
-        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
-    String responseRefreshToken = tokenProvider.regenerateRefreshToken(request, serverIdList);
-
-    return Pair.of(responseDto, responseRefreshToken);
+    return responseDto;
   }
 
   // 서버 초대코드 조회
@@ -274,7 +255,7 @@ public class ServerService {
 
     // todo role check
     // 현재는 참여자확인만 이루어짐
-    Server server = serverUserRelationRepository.findServerByUserAndServerId(user, serverId)
+    Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     // invite code -> expire 7d default
@@ -318,7 +299,7 @@ public class ServerService {
   }
 
   @Transactional
-  public String leave(HttpServletRequest request, Long serverId) {
+  public void leave(Long serverId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -327,7 +308,7 @@ public class ServerService {
 
     // todo role check
     // 현재는 참여자확인만 이루어짐
-    Server server = serverUserRelationRepository.findServerByUserAndServerId(user, serverId)
+    Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     ServerUserRelation serverUserRelation = serverUserRelationRepository
@@ -360,18 +341,11 @@ public class ServerService {
         .leave(true)
         .build();
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
-
-    // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
-    List<Long> serverIdList = serverUserRelationRepository
-        .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
-
-    return tokenProvider.regenerateRefreshToken(request, serverIdList);
   }
 
   // 서버 삭제
   @Transactional
-  public String delete(HttpServletRequest request, Long serverId,
-      ServerDeleteRequestDto requestDto) {
+  public void delete(Long serverId, ServerDeleteRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
@@ -403,12 +377,6 @@ public class ServerService {
           .serverId(serverId)
           .build();
       messagingTemplate.convertAndSend(serverUrl, newMessageDto);
-
-      // subServerList가 바뀌었기 때문에 refreshToken 새로 생성 후 반환
-      List<Long> serverIdList = serverUserRelationRepository
-          .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
-
-      return tokenProvider.regenerateRefreshToken(request, serverIdList);
     }
     throw new ServerException(SERVER_NOT_PERMITTED);
   }
