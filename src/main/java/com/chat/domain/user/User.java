@@ -7,7 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AccessLevel;
@@ -17,7 +16,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Entity
-@Table(name = "user")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
@@ -33,7 +31,6 @@ public class User {
 
   private String password;
 
-  @Column(name = "register_date")
   private LocalDateTime registerDate;
 
   private boolean activated;
@@ -84,10 +81,6 @@ public class User {
   // 비밀번호 복구 재설정 userTemp.user -> user.password
   public void recoverPassword(String password) {
     this.password = password;
-  }
-
-  public boolean checkUsername(String username) {
-    return this.username.equals(username);
   }
 
   // 비밀번호 재설정시 이전 비밀번호 확인
