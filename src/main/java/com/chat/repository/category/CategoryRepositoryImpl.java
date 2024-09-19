@@ -1,5 +1,8 @@
 package com.chat.repository.category;
 
+import static org.springframework.util.ObjectUtils.isEmpty;
+
+import com.chat.domain.category.Category;
 import com.chat.domain.category.QCategory;
 import com.chat.dto.category.CategoryInfoDto;
 import com.chat.dto.category.QCategoryInfoDto;
@@ -33,5 +36,19 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
 
   private BooleanExpression logicDeleteFalse() {
     return qCategory.logicDelete.isFalse();
+  }
+
+  @Override
+  public Double fetchMaxDisplayOrder(Category category) {
+    return queryFactory
+        .select(qCategory.displayOrder.max())
+        .from(qCategory)
+        .where(categoryEq(category))
+        .fetchFirst();
+
+  }
+
+  private BooleanExpression categoryEq(Category category) {
+    return isEmpty(category) ? null : qCategory.eq(category);
   }
 }

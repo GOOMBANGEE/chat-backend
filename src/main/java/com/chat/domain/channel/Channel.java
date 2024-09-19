@@ -2,6 +2,7 @@ package com.chat.domain.channel;
 
 import com.chat.domain.category.Category;
 import com.chat.domain.server.Server;
+import com.chat.dto.channel.ChannelSettingRequestDto;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -55,4 +56,23 @@ public class Channel {
   public boolean isOpen() {
     return open;
   }
+
+  public void rename(String name) {
+    this.name = name;
+  }
+
+  // channel setting
+  public void setting(ChannelSettingRequestDto requestDto, Category category) {
+    this.name = requestDto.getName();
+    this.displayOrder = requestDto.getDisplayOrder();
+    this.open = requestDto.isOpen();
+    this.category = category;
+  }
+
+  // channel delete
+  public void logicDelete() {
+    this.logicDelete = true;
+  }
+
+
 }

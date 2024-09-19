@@ -12,6 +12,8 @@ public class MessageDto {
 
   public enum MessageType {
     ENTER, SEND, INFO, LEAVE,
+    DELETE_SERVER,
+    CREATE_CHANNEL, UPDATE_CHANNEL, DELETE_CHANNEL,
     UPDATE_CHAT, DELETE_CHAT,
     DELETE_SERVER
   }
@@ -19,6 +21,10 @@ public class MessageDto {
   private MessageType messageType;
 
   private Long serverId;
+
+  private Long categoryId;
+
+  private Long channelId;
 
   private Long chatId;
 
@@ -43,12 +49,14 @@ public class MessageDto {
   private LocalDateTime updateTime;
 
   @Builder
-  public MessageDto(MessageType messageType, Long serverId, Long chatId, Long userId,
-      String username, String message, boolean enter, boolean leave, boolean friendRequest,
-      boolean friendAccept, boolean friendDelete, LocalDateTime createTime,
+  public MessageDto(MessageType messageType, Long serverId, Long categoryId, Long channelId,
+      Long chatId, Long userId, String username, String message, boolean enter, boolean leave,
+      boolean friendRequest, boolean friendAccept, boolean friendDelete, LocalDateTime createTime,
       LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
+    this.categoryId = categoryId;
+    this.channelId = channelId;
     this.chatId = chatId;
     this.userId = userId;
     this.username = username;

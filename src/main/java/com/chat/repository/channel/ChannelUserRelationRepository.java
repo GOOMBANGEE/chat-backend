@@ -3,6 +3,7 @@ package com.chat.repository.channel;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.user.User;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,4 +13,6 @@ public interface ChannelUserRelationRepository extends JpaRepository<ChannelUser
     ChannelUserRelationRepositoryCustom {
 
   Optional<ChannelUserRelation> findByChannelAndUser(Channel channel, User user);
+
+  List<ChannelUserRelation> findByChannel(Channel channel);
 }

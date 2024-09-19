@@ -13,4 +13,6 @@ public interface ChannelServerRoleRelationRepository extends
 
   List<ChannelServerRoleRelation> findByChannelAndServerRoleIn(Channel channel,
       List<ServerRole> serverRoleList);
+
+  List<ChannelServerRoleRelation> findByChannel(Channel channel);
 }
