@@ -24,6 +24,7 @@ import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import com.chat.exception.ServerException;
+import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryRepository;
 import com.chat.repository.category.CategoryServerRoleRelationRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
@@ -66,7 +67,7 @@ public class ServerService {
   private final CategoryRepository categoryRepository;
   private final ChannelRepository channelRepository;
 
-  private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
+  private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
   private static final String SERVER_NAME_INVALID = "SERVER:SERVER_NAME_INVALID";
   private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
@@ -93,7 +94,7 @@ public class ServerService {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 서버 생성
     String username = requestDto.getUsername();
@@ -156,7 +157,7 @@ public class ServerService {
     // 해당 유저가 속한 서버 리턴
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository
         .fetchServerInfoDtoListByUser(user);
@@ -209,7 +210,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
@@ -249,7 +250,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
@@ -313,7 +314,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
@@ -335,7 +336,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // todo role check
     // 현재는 참여자확인만 이루어짐
@@ -388,7 +389,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // todo role check
     // 현재는 참여자확인만 이루어짐
@@ -434,7 +435,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
@@ -471,7 +472,7 @@ public class ServerService {
 
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new ServerException(USER_UNREGISTERED));
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));

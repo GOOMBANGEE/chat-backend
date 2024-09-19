@@ -75,6 +75,30 @@ public class GlobalExceptionHandler {
     return e.handleException();
   }
 
+  @ExceptionHandler(CategoryException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponseDto handleCategoryException(CategoryException e, HttpServletRequest request) {
+    configureSentryScope(e.getId(), request);
+    log.debug("CATEGORY_ERROR : {}", e.getId());
+    return e.handleException();
+  }
+
+  @ExceptionHandler(ChannelException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponseDto handleChannelException(ChannelException e, HttpServletRequest request) {
+    configureSentryScope(e.getId(), request);
+    log.debug("CHANNEL_ERROR : {}", e.getId());
+    return e.handleException();
+  }
+
+  @ExceptionHandler(ChatException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponseDto handleChatException(ChatException e, HttpServletRequest request) {
+    configureSentryScope(e.getId(), request);
+    log.debug("CHAT_ERROR : {}", e.getId());
+    return e.handleException();
+  }
+
   @ExceptionHandler(UserException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ErrorResponseDto handleUserException(UserException e, HttpServletRequest request) {
