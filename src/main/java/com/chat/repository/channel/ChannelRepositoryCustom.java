@@ -6,4 +6,6 @@ import java.util.List;
 public interface ChannelRepositoryCustom {
 
   List<ChannelInfoDto> fetchChannelInfoDtoListByServerIdList(List<Long> serverIdList);
+
+  List<MessageQueueInitializeDto> fetchMessageQueueInitializeDtoList();
 }

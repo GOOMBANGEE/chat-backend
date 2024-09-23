@@ -11,11 +11,11 @@ import lombok.NoArgsConstructor;
 public class MessageDto {
 
   public enum MessageType {
-    ENTER, SEND, INFO, LEAVE,
-    DELETE_SERVER,
-    CREATE_CHANNEL, UPDATE_CHANNEL, DELETE_CHANNEL,
-    UPDATE_CHAT, DELETE_CHAT,
-    DELETE_SERVER
+    SERVER_CREATE, SERVER_ENTER, SERVER_UPDATE, SERVER_DELETE, SERVER_LEAVE,
+    CHANNEL_CREATE, CHANNEL_UPDATE, CHANNEL_DELETE,
+    CHAT_SEND, CHAT_UPDATE, CHAT_DELETE,
+    USER_ONLINE, USER_OFFLINE,
+    FRIEND_REQUEST, FRIEND_ACCEPT, FRIEND_DELETE
   }
 
   private MessageType messageType;
@@ -34,24 +34,13 @@ public class MessageDto {
 
   private String message;
 
-  private boolean enter;
-
-  private boolean leave;
-
-  private boolean friendRequest;
-
-  private boolean friendAccept;
-
-  private boolean friendDelete;
-
   private LocalDateTime createTime;
 
   private LocalDateTime updateTime;
 
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long categoryId, Long channelId,
-      Long chatId, Long userId, String username, String message, boolean enter, boolean leave,
-      boolean friendRequest, boolean friendAccept, boolean friendDelete, LocalDateTime createTime,
+      Long chatId, Long userId, String username, String message, LocalDateTime createTime,
       LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
@@ -61,11 +50,6 @@ public class MessageDto {
     this.userId = userId;
     this.username = username;
     this.message = message;
-    this.enter = enter;
-    this.leave = leave;
-    this.friendRequest = friendRequest;
-    this.friendAccept = friendAccept;
-    this.friendDelete = friendDelete;
     this.createTime = createTime;
     this.updateTime = updateTime;
   }

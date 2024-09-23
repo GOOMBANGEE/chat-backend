@@ -17,6 +17,7 @@ public class ValidExceptionHandler {
       case "VALID:SERVER_INVALID" -> ErrorResponseDto.build(id, "서버가 유효하지 않습니다");
       case "VALID:CHAT_INVALID" -> ErrorResponseDto.build(id, "채팅이 유효하지 않습니다");
       case "VALID:PAGE_INVALID" -> ErrorResponseDto.build(id, "페이지가 유효하지 않습니다");
+      case "VALID:CHANNEL_INVALID" -> ErrorResponseDto.build(id, "채널이 유효하지 않습니다");
       default -> ErrorResponseDto.build("VALID:UNKNOWN", "알 수 없는 오류");
     };
   }

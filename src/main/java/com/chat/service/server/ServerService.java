@@ -3,6 +3,7 @@ package com.chat.service.server;
 import com.chat.domain.Chat;
 import com.chat.domain.category.Category;
 import com.chat.domain.channel.Channel;
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
@@ -37,6 +38,7 @@ import com.chat.repository.server.ServerRoleUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
+import com.chat.util.websocket.StompAfterCommitSynchronization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
@@ -52,6 +54,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -137,9 +140,58 @@ public class ServerService {
         .build();
     channelRepository.save(channel);
 
+    ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
+        .channel(channel)
+        .user(user)
+        .readMessage(true)
+        .writeMessage(true)
+        .viewHistory(true)
+        .build();
+    channelUserRelationRepository.save(channelUserRelation);
+
     Long id = server.getServerIdForServerCreateResponse();
     Long categoryId = category.getCategoryIdForServerCreateResponse();
-    Long channelId = channel.getChannelIdForServerCreateResponse();
+    Long channelId = channel.getChannelIdForServerCreate();
+    server.setDefaultChannel(channel);
+    serverRepository.save(server);
+
+    LocalDateTime createTime = LocalDateTime.now();
+    Chat chat = Chat.builder()
+        .server(server)
+        .channel(channel)
+        .user(user)
+        .logicDelete(false)
+        .enter(true)
+        .createTime(createTime)
+        .build();
+    chatRepository.save(chat);
+
+    Long chatId = chat.fetchChatIdForUpdateLastMessage();
+    server.updateLastMessageId(chatId);
+    channel.updateLastMessageId(chatId);
+    serverRepository.save(server);
+    channelRepository.save(channel);
+
+    // message queue 활성화를 위한 dummy message
+    Long userId = requestDto.getUserId();
+    MessageDto newMessageDto = MessageDto.builder()
+        .messageType(MessageType.SERVER_CREATE)
+        .serverId(id)
+        .categoryId(categoryId)
+        .channelId(channelId)
+        .userId(userId)
+        .build();
+    List<String> urlList = List.of(
+        SUB_USER + userId,
+        SUB_SERVER + id,
+        SUB_CHANNEL + id + "/" + channelId
+    );
+    urlList.forEach(url ->
+        TransactionSynchronizationManager.registerSynchronization(
+            new StompAfterCommitSynchronization(messagingTemplate, url, newMessageDto)
+        )
+    );
+
     return ServerCreateResponseDto.builder()
         .id(id)
         .name(name)

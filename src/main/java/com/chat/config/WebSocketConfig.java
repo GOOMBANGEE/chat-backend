@@ -1,6 +1,6 @@
 package com.chat.config;
 
-import com.chat.util.SubscriptionInterceptor;
+import com.chat.util.websocket.SubscriptionInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -32,5 +32,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     registration.interceptors(subscriptionInterceptor);
+  }
+
+  @Override
+  public void configureClientOutboundChannel(ChannelRegistration registration) {
+    registration.taskExecutor().corePoolSize(20).maxPoolSize(50);
   }
 }

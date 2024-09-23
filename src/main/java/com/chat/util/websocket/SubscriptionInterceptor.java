@@ -1,55 +1,52 @@
-package com.chat.util;
+package com.chat.util.websocket;
 
 
-import com.chat.domain.channel.ChannelServerRoleRelation;
-import com.chat.domain.server.Server;
-import com.chat.domain.server.ServerRole;
 import com.chat.domain.user.User;
+import com.chat.exception.ChannelException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.repository.channel.ChannelRepository;
-import com.chat.repository.channel.ChannelServerRoleRelationRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.server.ServerRepository;
-import com.chat.repository.server.ServerRoleUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
-import java.util.List;
+import java.util.Objects;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SubscriptionInterceptor implements ChannelInterceptor {
 
+  private final ServerRepository serverRepository;
+  private final ServerUserRelationRepository serverUserRelationRepository;
+  private final ChannelRepository channelRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final UserRepository userRepository;
+
   private final TokenProvider tokenProvider;
 
-  private static final String USER_UNREGISTERED = "SERVER:USER_UNREGISTERED";
+  private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String INVALID_PATH = "SERVER:INVALID_PATH";
   private static final String INVALID_TOKEN = "SERVER:INVALID_TOKEN";
   private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
-  private static final String BEARER_PREFIX = "Bearer ";
+  private static final String CHANNEL_NOT_PARTICIPATED = "CHANNEL:CHANNEL_NOT_PARTICIPATED";
 
+  private static final String AUTHORIZATION = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer ";
   private static final String USER = "user";
   private static final String SERVER = "server";
   private static final String CHANNEL = "channel";
-
-  private static final String AUTHORIZATION = "Authorization";
-  private final ChannelRepository channelRepository;
-  private final ServerRepository serverRepository;
-  private final ServerUserRelationRepository serverUserRelationRepository;
-  private final UserRepository userRepository;
-  private final ChannelUserRelationRepository channelUserRelationRepository;
-  private final ServerRoleUserRelationRepository serverRoleUserRelationRepository;
-  private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
 
   // 이전 구독방법
   // 구독하는 경로 /sub/server/{serverId} /sub/user/{userId}
@@ -76,7 +73,8 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     if (accessor == null) {
       throw new ServerException(INVALID_PATH);
     }
-    if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+    SimpMessageType messageType = accessor.getMessageType();
+    if (Objects.requireNonNull(messageType) == SimpMessageType.SUBSCRIBE) {
       // sub/user/{userId}
       // sub/server/{serverId}
       // sub/channel/{serverId}/{channelId}
@@ -133,7 +131,7 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
 
     User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    
+
     if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
       throw new ServerException(SERVER_NOT_PARTICIPATED);
     }
@@ -148,33 +146,19 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
 
     User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    Server server = serverRepository.findById(serverId)
-        .orElseThrow(() -> new ServerException(INVALID_PATH));
+    if (serverRepository.findByIdAndLogicDeleteFalse(serverId)
+        .isEmpty()) {
+      throw new ServerException(INVALID_PATH);
+    }
     com.chat.domain.channel.Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new ServerException(INVALID_PATH));
 
-    // channel의 공개여부 확인
-    // 공개채널인 경우 유저가 서버에 속해있는지만 확인하고 연결
-    if (channel.isOpen() &&
-        serverUserRelationRepository
-            .findByUserAndServerAndLogicDeleteFalse(user, server)
-            .isEmpty()) {
-      throw new ServerException(SERVER_NOT_PARTICIPATED);
-    }
-
-    // 비공개채널인 경우 유저가 채널에 접근가능한 권한이있는지 확인
-    // channelUserRelation -> 특정 유저에게 주어지는 열람권한이 없는경우 -> 역할있는지 검사실행
-    if (channelUserRelationRepository.findByChannelAndUser(channel, user).isEmpty()) {
-      // serverRoleUserRelation -> 유저가 해당 서버에 가진 모든 역할을 가져옴
-      List<ServerRole> serverRoleList = serverRoleUserRelationRepository
-          .fetchServerRoleListByServerAndUser(server, user);
-
-      // channelServerRoleRelation -> channel, serverRole로 검색하여 열람권한을 가진 역할을 가지지 못한경우
-      List<ChannelServerRoleRelation> channelServerRoleRelationList = channelServerRoleRelationRepository.findByChannelAndServerRoleIn(
-          channel, serverRoleList);
-      if (channelServerRoleRelationList.isEmpty()) {
-        throw new ServerException(SERVER_NOT_PARTICIPATED);
-      }
+    // 기존방식 -> 특정유저, 특정역할에 대해서 검색
+    // 개선방안 -> ChannelUserRelation에 모든 채널-유저 정보가 담겨있어서 해당 엔티티가 존재하는지 검색
+    if (channelUserRelationRepository
+        .findByChannelAndUser(channel, user)
+        .isEmpty()) {
+      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
     }
   }
 }
