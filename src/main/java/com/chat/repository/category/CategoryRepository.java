@@ -11,4 +11,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long>,
 
   Optional<Category> findByIdAndLogicDeleteFalse(Long id);
 
+  Optional<Category> findByIdAndLogicDeleteFalseAndServerId(Long categoryId, Long serverId);
+
 }

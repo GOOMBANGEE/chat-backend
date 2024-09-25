@@ -2,8 +2,8 @@ package com.chat.repository.category;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
-import com.chat.domain.category.Category;
 import com.chat.domain.category.QCategory;
+import com.chat.domain.server.Server;
 import com.chat.dto.category.CategoryInfoDto;
 import com.chat.dto.category.QCategoryInfoDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -39,16 +39,15 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
   }
 
   @Override
-  public Double fetchMaxDisplayOrder(Category category) {
+  public Double fetchMaxDisplayOrder(Server server) {
     return queryFactory
-        .select(qCategory.displayOrder.max())
+        .select(qCategory.displayOrder.max().coalesce(1024.0))
         .from(qCategory)
-        .where(categoryEq(category))
+        .where(serverEq(server))
         .fetchFirst();
-
   }
 
-  private BooleanExpression categoryEq(Category category) {
-    return isEmpty(category) ? null : qCategory.eq(category);
+  private BooleanExpression serverEq(Server server) {
+    return isEmpty(server) ? null : qCategory.server.eq(server);
   }
 }

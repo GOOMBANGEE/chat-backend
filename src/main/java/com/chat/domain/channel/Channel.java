@@ -30,6 +30,8 @@ public class Channel {
 
   private boolean logicDelete;
 
+  private Long lastMessageId;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private Server server;
@@ -49,7 +51,11 @@ public class Channel {
     this.category = category;
   }
 
-  public Long getChannelIdForServerCreateResponse() {
+  public Long getChannelIdForServerCreate() {
+    return this.id;
+  }
+
+  public Long getChannelIdForChannelCreate() {
     return this.id;
   }
 
@@ -74,5 +80,12 @@ public class Channel {
     this.logicDelete = true;
   }
 
+  public void updateLastMessageId(Long chatId) {
+    this.lastMessageId = chatId;
+  }
 
+  public void deleteCategory(Double displayOrder) {
+    this.displayOrder = displayOrder;
+    this.category = null;
+  }
 }

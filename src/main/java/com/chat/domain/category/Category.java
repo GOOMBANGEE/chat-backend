@@ -45,4 +45,13 @@ public class Category {
   public Long getCategoryIdForServerCreateResponse() {
     return this.id;
   }
+
+  public Long getCategoryIdForCategoryCreate() {
+    return this.id;
+  }
+
+  public void logicDelete() {
+    this.displayOrder = 0.0;
+    this.logicDelete = true;
+  }
 }
