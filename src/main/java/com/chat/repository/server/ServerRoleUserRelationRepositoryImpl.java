@@ -39,11 +39,16 @@ public class ServerRoleUserRelationRepositoryImpl implements
   }
 
   @Override
-  public List<ServerRole> fetchServerRoleListByUser(User user) {
+  public List<User> fetchUserByServerRoleIn(List<ServerRole> serverRoleList) {
     return queryFactory
-        .select(qServerRoleUserRelation.serverRole)
+        .select(qServerRoleUserRelation.user)
         .from(qServerRoleUserRelation)
-        .where(userEq(user))
+        .where(serverRoleIn(serverRoleList))
+        .distinct()
         .fetch();
+  }
+
+  private BooleanExpression serverRoleIn(List<ServerRole> serverRoleList) {
+    return isEmpty(serverRoleList) ? null : qServerRoleUserRelation.serverRole.in(serverRoleList);
   }
 }

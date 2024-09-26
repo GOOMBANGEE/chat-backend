@@ -24,15 +24,24 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   QChat qChat = QChat.chat;
 
   @Override
-  public List<ChatInfoDto> fetchChatInfoDtoListByServerId(Long serverId) {
+  public List<ChatInfoDto> fetchChatInfoDtoListByChannelId(Long channelId) {
     return queryFactory
-        .select(new QChatInfoDto(qChat.id, qChat.user.username, qChat.message, qChat.enter,
-            qChat.createTime, qChat.updateTime))
+        .select(new QChatInfoDto(
+            qChat.id,
+            qChat.user.username,
+            qChat.message,
+            qChat.enter,
+            qChat.createTime,
+            qChat.updateTime))
         .from(qChat)
-        .where(serverIdEq(serverId), chatDeleteFalse())
+        .where(channelIdEq(channelId), chatDeleteFalse())
         .orderBy(qChat.id.desc())
         .limit(50)
         .fetch();
+  }
+
+  private BooleanExpression channelIdEq(Long channelId) {
+    return isEmpty(channelId) ? null : qChat.channel.id.eq(channelId);
   }
 
   private BooleanExpression serverIdEq(Long serverId) {

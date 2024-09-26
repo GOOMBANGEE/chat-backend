@@ -12,13 +12,16 @@ public class SendMessageResponseDto {
 
   private Long serverId;
 
+  private Long channelId;
+
   private Long id;
 
   private LocalDateTime createTime;
 
   @Builder
-  public SendMessageResponseDto(Long serverId, Long id, LocalDateTime createTime) {
+  public SendMessageResponseDto(Long serverId, Long channelId, Long id, LocalDateTime createTime) {
     this.serverId = serverId;
+    this.channelId = channelId;
     this.id = id;
     this.createTime = createTime;
   }

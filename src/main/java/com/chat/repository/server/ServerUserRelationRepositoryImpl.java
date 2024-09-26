@@ -55,7 +55,8 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   @Override
   public List<ServerInfoDto> fetchServerInfoDtoListByUser(User user) {
     return queryFactory
-        .select(new QServerInfoDto(qServerUserRelation.server.id,
+        .select(new QServerInfoDto(
+            qServerUserRelation.server.id,
             qServerUserRelation.server.name))
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
@@ -95,6 +96,15 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .select(qServerUserRelation.server.id)
         .from(qServerUserRelation)
         .where(userEq(user), serverDeleteFalse(), logicDeleteFalse())
+        .fetch();
+  }
+
+  @Override
+  public List<User> fetchUserListByServer(Server server) {
+    return queryFactory
+        .select(qServerUserRelation.user)
+        .from(qServerUserRelation)
+        .where(serverEq(server), serverDeleteFalse(), logicDeleteFalse())
         .fetch();
   }
 }

@@ -1,11 +1,15 @@
 package com.chat.domain.server;
 
+import com.chat.domain.channel.Channel;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -28,12 +32,20 @@ public class Server {
 
   private boolean logicDelete;
 
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn
+  private Channel defaultChannel;
+
   @Builder
   public Server(String name, String ownerUsername, Long userCount, boolean logicDelete) {
     this.name = name;
     this.ownerUsername = ownerUsername;
     this.userCount = userCount;
     this.logicDelete = logicDelete;
+  }
+
+  public void setDefaultChannel(Channel channel) {
+    this.defaultChannel = channel;
   }
 
   public Long getServerIdForServerCreateResponse() {
@@ -44,10 +56,11 @@ public class Server {
     this.name = newName;
   }
 
-  public ServerJoinResponseDto getServerIdForServerJoinResponse() {
+  public ServerJoinResponseDto getServerIdForServerJoinResponse(Long channelId) {
     return ServerJoinResponseDto.builder()
         .id(this.id)
         .name(this.name)
+        .channelId(channelId)
         .build();
   }
 
@@ -87,4 +100,5 @@ public class Server {
   public void logicDelete() {
     this.logicDelete = true;
   }
+
 }

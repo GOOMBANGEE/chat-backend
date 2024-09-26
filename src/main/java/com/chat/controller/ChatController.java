@@ -30,6 +30,7 @@ public class ChatController {
   private final ChatService chatService;
 
   private static final String SERVER_INVALID = "VALID:SERVER_INVALID";
+  private static final String CHANNEL_INVALID = "VALID:CHANNEL_INVALID";
   private static final String CHAT_INVALID = "VALID:CHAT_INVALID";
   private static final String PAGE_INVALID = "VALID:PAGE_INVALID";
 
@@ -46,25 +47,31 @@ public class ChatController {
     return ResponseEntity.ok(null);
   }
 
-  @GetMapping("/{serverId}/list")
+  @GetMapping("/{serverId}/{channelId}/list")
   public ResponseEntity<ChatListResponseDto> list(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
-      Long serverId) {
-    ChatListResponseDto responseDto = chatService.list(serverId);
+      Long serverId,
+      @NotNull(message = CHANNEL_INVALID)
+      @PathVariable("channelId")
+      Long channelId) {
+    ChatListResponseDto responseDto = chatService.list(serverId, channelId);
     return ResponseEntity.ok(responseDto);
   }
 
-  @DeleteMapping("/{serverId}/{chatId}")
+  @DeleteMapping("/{serverId}/{channelId}/{chatId}")
   public ResponseEntity<EmptyResponseDto> delete(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
       Long serverId,
+      @NotNull(message = CHANNEL_INVALID)
+      @PathVariable("channelId")
+      Long channelId,
       @NotNull(message = CHAT_INVALID)
       @PathVariable("chatId")
       Long chatId
   ) {
-    chatService.delete(serverId, chatId);
+    chatService.delete(serverId, channelId, chatId);
     return ResponseEntity.ok(null);
   }
 

@@ -5,19 +5,20 @@ import com.chat.domain.category.Category;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.server.Server;
-import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.category.CategoryInfoDto;
 import com.chat.dto.channel.ChannelInfoDto;
+import com.chat.dto.channel.ChannelRegistrationDto;
 import com.chat.dto.server.ServerCreateRequestDto;
 import com.chat.dto.server.ServerCreateResponseDto;
 import com.chat.dto.server.ServerDeleteRequestDto;
 import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
+import com.chat.dto.server.ServerJoinInfoDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
 import com.chat.dto.server.ServerSettingRequestDto;
@@ -27,14 +28,11 @@ import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryRepository;
-import com.chat.repository.category.CategoryServerRoleRelationRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
 import com.chat.repository.channel.ChannelRepository;
-import com.chat.repository.channel.ChannelServerRoleRelationRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
-import com.chat.repository.server.ServerRoleUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -44,10 +42,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,11 +60,13 @@ public class ServerService {
 
   private final CustomUserDetailsService customUserDetailsService;
   private final ServerRepository serverRepository;
-  private final UserRepository userRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
-  private final ChatRepository chatRepository;
   private final CategoryRepository categoryRepository;
+  private final CategoryUserRelationRepository categoryUserRelationRepository;
   private final ChannelRepository channelRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChatRepository chatRepository;
+  private final UserRepository userRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -79,13 +77,10 @@ public class ServerService {
   private static final String SERVER_NOT_EMPTY = "SERVER:SERVER_NOT_EMPTY";
 
   private final SimpMessagingTemplate messagingTemplate;
+  private static final String SUB_USER = "/sub/user/";
   private static final String SUB_SERVER = "/sub/server/";
+  private static final String SUB_CHANNEL = "/sub/channel/";
   private final ObjectMapper mapper = new ObjectMapper();
-  private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
-  private final ServerRoleUserRelationRepository serverRoleUserRelationRepository;
-  private final CategoryUserRelationRepository categoryUserRelationRepository;
-  private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
-  private final ChannelUserRelationRepository channelUserRelationRepository;
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -167,9 +162,7 @@ public class ServerService {
     chatRepository.save(chat);
 
     Long chatId = chat.fetchChatIdForUpdateLastMessage();
-    server.updateLastMessageId(chatId);
     channel.updateLastMessageId(chatId);
-    serverRepository.save(server);
     channelRepository.save(channel);
 
     // message queue 활성화를 위한 dummy message
@@ -213,44 +206,19 @@ public class ServerService {
 
     List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository
         .fetchServerInfoDtoListByUser(user);
-    List<ServerRole> serverRoleList = serverRoleUserRelationRepository
-        .fetchServerRoleListByUser(user);
-    List<Long> serverIdList = serverInfoDtoList.stream()
-        .map(ServerInfoDto::getId)
-        .toList();
 
-    // 유저가 접근할 권한이 있는 카테고리 + open category
-    List<CategoryInfoDto> categoryInfoDtoListFromCategoryOpen = categoryRepository
-        .fetchCategoryInfoDtoListByServerIdList(serverIdList);
-    List<CategoryInfoDto> categoryInfoDtoListFromCategoryServerRoleRelation = categoryServerRoleRelationRepository
-        .fetchCategoryInfoDtoListByServerRoleList(serverRoleList);
-    List<CategoryInfoDto> categoryInfoDtoListFromCategoryUserRelation = categoryUserRelationRepository
+    // 유저가 접근할 권한이 있는 카테고리
+    List<CategoryInfoDto> categoryInfoDtoList = categoryUserRelationRepository
         .fetchCategoryInfoDtoListByUser(user);
-    // set으로 중복 제거
-    Set<CategoryInfoDto> categoryInfoDtoSet = new HashSet<>(
-        categoryInfoDtoListFromCategoryOpen);
-    categoryInfoDtoSet.addAll(categoryInfoDtoListFromCategoryServerRoleRelation);
-    categoryInfoDtoSet.addAll(categoryInfoDtoListFromCategoryUserRelation);
-    List<CategoryInfoDto> mergedCategoryInfoDtoList = new ArrayList<>(categoryInfoDtoSet);
 
-    // 유저가 접근할 권한이 있는 채널 + open channel
-    List<ChannelInfoDto> channelInfoDtoListFromChannelOpen = channelRepository
-        .fetchChannelInfoDtoListByServerIdList(serverIdList);
-    List<ChannelInfoDto> channelInfoDtoListFromChannelServerRoleRelation = channelServerRoleRelationRepository
-        .fetchChannelInfoDtoListByServerRoleList(serverRoleList);
-    List<ChannelInfoDto> channelInfoDtoListFromChannelUserRelation = channelUserRelationRepository
+    // 유저가 접근할 권한이 있는 채널
+    List<ChannelInfoDto> channelInfoDtoList = channelUserRelationRepository
         .fetchChannelInfoDtoListByUser(user);
-    // set으로 중복 제거
-    Set<ChannelInfoDto> channelInfoDtoSet = new HashSet<>(
-        channelInfoDtoListFromChannelOpen);
-    channelInfoDtoSet.addAll(channelInfoDtoListFromChannelServerRoleRelation);
-    channelInfoDtoSet.addAll(channelInfoDtoListFromChannelUserRelation);
-    List<ChannelInfoDto> mergedChannelInfoDtoList = new ArrayList<>(channelInfoDtoSet);
 
     return ServerListResponseDto.builder()
         .serverList(serverInfoDtoList)
-        .categoryList(mergedCategoryInfoDtoList)
-        .channelList(mergedChannelInfoDtoList)
+        .categoryList(categoryInfoDtoList)
+        .channelList(channelInfoDtoList)
         .build();
   }
 
@@ -285,7 +253,7 @@ public class ServerService {
           .name(name)
           .build();
       MessageDto newMessageDto = MessageDto.builder()
-          .messageType(MessageType.INFO)
+          .messageType(MessageType.SERVER_UPDATE)
           .serverId(serverId)
           .message(mapper.writeValueAsString(serverInfoDto))
           .build();
@@ -304,8 +272,8 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    Server server = serverRepository.findByCodeAndLogicDeleteFalse(code)
-        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+    ServerJoinInfoDto serverJoinInfoDto = serverRepository.fetchServerInfoDtoByServerCode(code);
+    Server server = serverJoinInfoDto.getServer();
 
     Optional<ServerUserRelation> serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
         user, server);
@@ -334,13 +302,38 @@ public class ServerService {
     server.userJoin();
     serverRepository.save(server);
 
-    // return 입장한 서버 id
-    ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse();
+    // server내의 open채널 등록설정
+    List<ChannelRegistrationDto> channelRegistrationDtoList = channelRepository
+        .fetchChannelRegistrationDtoListByServer(server);
+    List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
+    channelRegistrationDtoList.forEach(
+        (channelRegistrationDto -> {
+          Channel channel = channelRegistrationDto.getChannel();
+          Long lastMessageId = channelRegistrationDto.getLastMessageId();
 
+          ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
+              .channel(channel)
+              .user(user)
+              .readMessage(true)
+              .writeMessage(true)
+              .viewHistory(true)
+              .lastReadMessageId(lastMessageId)
+              .build();
+
+          channelUserRelationList.add(channelUserRelation);
+        })
+    );
+    channelUserRelationRepository.saveAll(channelUserRelationList);
+
+    // return 입장한 서버 id
+    Long channelId = serverJoinInfoDto.getChannelId();
+    ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse(channelId);
+    Channel channel = serverJoinInfoDto.getChannel();
     LocalDateTime createTime = LocalDateTime.now();
     // 서버 입장 메시지 전송
     Chat chat = Chat.builder()
         .server(server)
+        .channel(channel)
         .user(user)
         .logicDelete(false)
         .enter(true)
@@ -349,12 +342,14 @@ public class ServerService {
     chatRepository.save(chat);
 
     Long serverId = responseDto.getId();
+
     UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
     Long userId = userInfoDto.getId();
     String username = userInfoDto.getUsername();
 
-    String serverUrl = SUB_SERVER + serverId;
-    MessageDto newMessageDto = chat.buildMessageDtoForSeverJoinResponse(serverId, userId, username);
+    String serverUrl = SUB_SERVER + serverId + "/" + channelId;
+    MessageDto newMessageDto = chat
+        .buildMessageDtoForSeverJoinResponse(serverId, channelId, userId, username);
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
 
     return responseDto;
@@ -470,12 +465,17 @@ public class ServerService {
     serverRepository.save(server);
     serverUserRelationRepository.save(serverUserRelation);
 
+    // 나간 유저는 ChannelUserRelation에서 삭제
+    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+        .fetchChannelUserRelationListByServerAndUser(server, user);
+    channelUserRelationRepository.deleteAll(channelUserRelationList);
+
     String serverUrl = SUB_SERVER + serverId;
     Long userId = user.fetchUserIdForServerLeaveResponse();
     MessageDto newMessageDto = MessageDto.builder()
+        .messageType(MessageType.SERVER_LEAVE)
         .serverId(serverId)
         .userId(userId)
-        .leave(true)
         .build();
     messagingTemplate.convertAndSend(serverUrl, newMessageDto);
   }
@@ -510,7 +510,7 @@ public class ServerService {
       // stomp pub
       String serverUrl = SUB_SERVER + serverId;
       MessageDto newMessageDto = MessageDto.builder()
-          .messageType(MessageType.DELETE_SERVER)
+          .messageType(MessageType.SERVER_DELETE)
           .serverId(serverId)
           .build();
       messagingTemplate.convertAndSend(serverUrl, newMessageDto);

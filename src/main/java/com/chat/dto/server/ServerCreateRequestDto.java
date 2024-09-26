@@ -9,12 +9,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ServerCreateRequestDto {
 
+  private Long userId;
+
   private String username;
 
   private String name;
 
   @Builder
-  public ServerCreateRequestDto(String username, String name) {
+  public ServerCreateRequestDto(Long userId, String username, String name) {
+    this.userId = userId;
     this.username = username;
     this.name = name;
   }

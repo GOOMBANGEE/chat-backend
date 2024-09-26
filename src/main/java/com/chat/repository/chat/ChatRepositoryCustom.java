@@ -7,7 +7,8 @@ import org.springframework.data.domain.Pageable;
 
 public interface ChatRepositoryCustom {
 
-  List<ChatInfoDto> fetchChatInfoDtoListByServerId(Long serverId);
+
+  List<ChatInfoDto> fetchChatInfoDtoListByChannelId(Long channelId);
 
   Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword, Pageable pageable);
 

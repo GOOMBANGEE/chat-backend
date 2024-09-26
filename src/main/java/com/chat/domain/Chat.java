@@ -1,8 +1,10 @@
 package com.chat.domain;
 
+import com.chat.domain.channel.Channel;
 import com.chat.domain.server.Server;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
+import com.chat.dto.MessageDto.MessageType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -26,11 +28,15 @@ public class Chat {
   private String message;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "server", referencedColumnName = "id")
+  @JoinColumn
   private Server server;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user", referencedColumnName = "id")
+  @JoinColumn
+  private Channel channel;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn
   private User user;
 
   private boolean logicDelete;
@@ -42,11 +48,12 @@ public class Chat {
   private LocalDateTime updateTime;
 
   @Builder
-  public Chat(Long id, String message, Server server, User user, boolean logicDelete,
-      boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
+  public Chat(Long id, String message, Server server, Channel channel, User user,
+      boolean logicDelete, boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
     this.id = id;
     this.message = message;
     this.server = server;
+    this.channel = channel;
     this.user = user;
     this.logicDelete = logicDelete;
     this.enter = enter;
@@ -62,6 +69,7 @@ public class Chat {
     return MessageDto.builder()
         .messageType(messageDto.getMessageType())
         .serverId(messageDto.getServerId())
+        .channelId(messageDto.getChannelId())
         .chatId(this.id)
         .username(messageDto.getUsername())
         .message(this.message)
@@ -78,14 +86,15 @@ public class Chat {
     this.logicDelete = true;
   }
 
-  public MessageDto buildMessageDtoForSeverJoinResponse(Long serverId, Long userId,
+  public MessageDto buildMessageDtoForSeverJoinResponse(Long serverId, Long channelId, Long userId,
       String username) {
     return MessageDto.builder()
+        .messageType(MessageType.SERVER_ENTER)
         .serverId(serverId)
+        .channelId(channelId)
         .chatId(this.id)
         .userId(userId)
         .username(username)
-        .enter(true)
         .createTime(this.createTime)
         .build();
   }

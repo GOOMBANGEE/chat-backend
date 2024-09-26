@@ -12,5 +12,5 @@ public interface ServerRoleUserRelationRepositoryCustom {
   // server, user가 주어졌을때, ServerRole에서 createChannel이 활성화 되어있는지 확인
   List<ServerRole> fetchServerRoleListByServerAndUser(Server server, User user);
 
-  List<ServerRole> fetchServerRoleListByUser(User user);
+  List<User> fetchUserByServerRoleIn(List<ServerRole> serverRoleList);
 }
