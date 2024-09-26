@@ -2,7 +2,10 @@ package com.chat.repository.channel;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
+import com.chat.domain.channel.Channel;
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.channel.QChannelUserRelation;
+import com.chat.domain.server.Server;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
 import com.chat.dto.channel.QChannelInfoDto;
@@ -24,7 +27,9 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
             qChannelUserRelation.channel.name,
             qChannelUserRelation.channel.displayOrder,
             qChannelUserRelation.channel.server.id,
-            qChannelUserRelation.channel.category.id))
+            qChannelUserRelation.channel.category.id,
+            qChannelUserRelation.lastReadMessageId,
+            qChannelUserRelation.channel.lastMessageId))
         .from(qChannelUserRelation)
         .where(userEq(user), logicDeleteFalse())
         .fetch();
@@ -36,5 +41,32 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private BooleanExpression logicDeleteFalse() {
     return qChannelUserRelation.channel.logicDelete.isFalse();
+  }
+
+  @Override
+  public List<User> fetchUserListByChannel(Channel channel) {
+    return queryFactory
+        .select(qChannelUserRelation.user)
+        .from(qChannelUserRelation)
+        .where(channelEq(channel), logicDeleteFalse())
+        .fetch();
+  }
+
+  private BooleanExpression channelEq(Channel channel) {
+    return isEmpty(channel) ? null : qChannelUserRelation.channel.eq(channel);
+  }
+
+  @Override
+  public List<ChannelUserRelation> fetchChannelUserRelationListByServerAndUser
+      (Server server, User user) {
+    return queryFactory
+        .select(qChannelUserRelation)
+        .from(qChannelUserRelation)
+        .where(serverEq(server), userEq(user), logicDeleteFalse())
+        .fetch();
+  }
+
+  private BooleanExpression serverEq(Server server) {
+    return isEmpty(server) ? null : qChannelUserRelation.channel.server.eq(server);
   }
 }

@@ -1,11 +1,14 @@
 package com.chat.repository.channel;
 
+import static org.springframework.util.ObjectUtils.isEmpty;
+
+import com.chat.domain.category.Category;
 import com.chat.domain.channel.QChannel;
 import com.chat.domain.server.Server;
 import com.chat.dto.MessageQueueInitializeDto;
 import com.chat.dto.QMessageQueueInitializeDto;
-import com.chat.dto.channel.ChannelInfoDto;
-import com.chat.dto.channel.QChannelInfoDto;
+import com.chat.dto.channel.ChannelRegistrationDto;
+import com.chat.dto.channel.QChannelRegistrationDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
@@ -18,25 +21,27 @@ public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
   QChannel qChannel = QChannel.channel;
 
   @Override
-  public List<ChannelInfoDto> fetchChannelInfoDtoListByServerIdList(List<Long> serverIdList) {
+  public List<ChannelRegistrationDto> fetchChannelRegistrationDtoListByServer(Server server) {
     return queryFactory
-        .select(new QChannelInfoDto(
-            qChannel.id,
-            qChannel.name,
-            qChannel.displayOrder,
-            qChannel.server.id,
-            qChannel.category.id))
+        .select(new QChannelRegistrationDto(
+            qChannel,
+            qChannel.lastMessageId
+        ))
         .from(qChannel)
-        .where(serverIdIn(serverIdList), logicDeleteFalse())
+        .where(serverEq(server), openTrue(), logicDeleteFalse())
         .fetch();
-  }
-
-  private BooleanExpression serverIdIn(List<Long> serverIdList) {
-    return qChannel.server.id.in(serverIdList);
   }
 
   private BooleanExpression logicDeleteFalse() {
     return qChannel.logicDelete.isFalse();
+  }
+
+  private BooleanExpression serverEq(Server server) {
+    return isEmpty(server) ? null : qChannel.server.eq(server);
+  }
+
+  private BooleanExpression openTrue() {
+    return qChannel.open.isTrue();
   }
 
   @Override
@@ -48,5 +53,31 @@ public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
         .from(qChannel)
         .where(logicDeleteFalse())
         .fetch();
+  }
+
+  @Override
+  public Double fetchMaxDisplayOrderByCategory(Category category) {
+    return queryFactory
+        .select(qChannel.displayOrder.max().coalesce(1024.0))
+        .from(qChannel)
+        .where(categoryEq(category))
+        .fetchFirst();
+  }
+
+  private BooleanExpression categoryEq(Category category) {
+    return isEmpty(category) ? null : qChannel.category.eq(category);
+  }
+
+  @Override
+  public Double fetchMaxDisplayOrderByServerAndCategoryNull(Server server) {
+    return queryFactory
+        .select(qChannel.displayOrder.max().coalesce(1024.0))
+        .from(qChannel)
+        .where(serverEq(server), categoryNull())
+        .fetchFirst();
+  }
+
+  private BooleanExpression categoryNull() {
+    return qChannel.category.isNull();
   }
 }

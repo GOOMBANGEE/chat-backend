@@ -34,13 +34,21 @@ public class ChannelUserRelation {
 
   private boolean viewHistory;
 
+  private Long lastReadMessageId;
+
   @Builder
-  public ChannelUserRelation(Channel channel, User user, boolean readMessage, boolean writeMessage,
-      boolean viewHistory) {
+  public ChannelUserRelation(Long id, Channel channel, User user, boolean readMessage,
+      boolean writeMessage, boolean viewHistory, Long lastReadMessageId) {
+    this.id = id;
     this.channel = channel;
     this.user = user;
     this.readMessage = readMessage;
     this.writeMessage = writeMessage;
     this.viewHistory = viewHistory;
+    this.lastReadMessageId = lastReadMessageId;
+  }
+
+  public void updateLastReadMessageId(Long lastReadMessageId) {
+    this.lastReadMessageId = lastReadMessageId;
   }
 }

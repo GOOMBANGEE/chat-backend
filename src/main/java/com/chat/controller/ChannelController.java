@@ -26,6 +26,7 @@ public class ChannelController {
 
   private static final String SERVER_INVALID = "VALID:SERVER_INVALID";
   private static final String CHANNEL_INVALID = "VALID:CHANNEL_INVALID";
+  private static final String CHAT_INVALID = "VALID:CHAT_INVALID";
 
   // 채널 생성
   @PostMapping("/{serverId}/create")
@@ -90,4 +91,20 @@ public class ChannelController {
 //    ServerUserListResponseDto responseDto = channelService.userList(channelId);
 //    return ResponseEntity.ok(responseDto);
 //  }
+
+  // 채널 메시지 읽기처리
+  @PostMapping("/{serverId}/{channelId}/{chatId}/read")
+  public ResponseEntity<EmptyResponseDto> read(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId,
+      @NotNull(message = CHANNEL_INVALID)
+      @PathVariable("channelId")
+      Long channelId,
+      @NotNull(message = CHAT_INVALID)
+      @PathVariable("chatId")
+      Long chatId) {
+    channelService.read(serverId, channelId, chatId);
+    return ResponseEntity.ok(null);
+  }
 }

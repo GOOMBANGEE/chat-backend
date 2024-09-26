@@ -65,6 +65,10 @@ public class Chat {
     return this.id;
   }
 
+  public Long fetchChatIdForUpdateLastMessage() {
+    return this.id;
+  }
+
   public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto) {
     return MessageDto.builder()
         .messageType(messageDto.getMessageType())
