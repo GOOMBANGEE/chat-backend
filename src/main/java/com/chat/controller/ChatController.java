@@ -48,14 +48,29 @@ public class ChatController {
   }
 
   @GetMapping("/{serverId}/{channelId}/list")
-  public ResponseEntity<ChatListResponseDto> list(
+  public ResponseEntity<ChatListResponseDto> chatList(
       @NotNull(message = SERVER_INVALID)
       @PathVariable("serverId")
       Long serverId,
       @NotNull(message = CHANNEL_INVALID)
       @PathVariable("channelId")
       Long channelId) {
-    ChatListResponseDto responseDto = chatService.list(serverId, channelId);
+    ChatListResponseDto responseDto = chatService.chatList(serverId, channelId);
+    return ResponseEntity.ok(responseDto);
+  }
+
+  @GetMapping("/{serverId}/{channelId}/{chatId}/list")
+  public ResponseEntity<ChatListResponseDto> chatListPrevious(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId,
+      @NotNull(message = CHANNEL_INVALID)
+      @PathVariable("channelId")
+      Long channelId,
+      @NotNull(message = CHAT_INVALID)
+      @PathVariable("chatId")
+      Long chatId) {
+    ChatListResponseDto responseDto = chatService.chatListPrevious(serverId, channelId, chatId);
     return ResponseEntity.ok(responseDto);
   }
 

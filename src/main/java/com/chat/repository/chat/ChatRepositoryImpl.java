@@ -53,6 +53,27 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   }
 
   @Override
+  public List<ChatInfoDto> fetchChatInfoDtoListByChannelIdAndChatId(Long channelId, Long chatId) {
+    return queryFactory
+        .select(new QChatInfoDto(
+            qChat.id,
+            qChat.user.username,
+            qChat.message,
+            qChat.enter,
+            qChat.createTime,
+            qChat.updateTime))
+        .from(qChat)
+        .where(channelIdEq(channelId), chatDeleteFalse(), chatIdLt(chatId))
+        .orderBy(qChat.id.desc())
+        .limit(50)
+        .fetch();
+  }
+
+  private BooleanExpression chatIdLt(Long chatId) {
+    return isEmpty(chatId) ? null : qChat.id.lt(chatId);
+  }
+
+  @Override
   public Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory

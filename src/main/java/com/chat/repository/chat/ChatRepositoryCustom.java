@@ -10,6 +10,8 @@ public interface ChatRepositoryCustom {
 
   List<ChatInfoDto> fetchChatInfoDtoListByChannelId(Long channelId);
 
+  List<ChatInfoDto> fetchChatInfoDtoListByChannelIdAndChatId(Long channelId, Long chatId);
+
   Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword, Pageable pageable);
 
   Page<ChatInfoDto> searchChatInfoDtoListByUsername(Long serverId, String keyword,

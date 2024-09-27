@@ -75,12 +75,9 @@ public class ChatService {
     Long channelId = messageDto.getChannelId();
     String message = messageDto.getMessage();
 
-    // 해당 서버 참여자인지 확인
+    // 해당 서버,채널 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
-    // todo role check
-    // 현재는 참여자확인만 이루어짐
     Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
     Channel channel = channelRepository.findByIdAndLogicDeleteFalseAndServerId(channelId, serverId)
@@ -135,14 +132,12 @@ public class ChatService {
 
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버 참여자인지 확인
+    // 해당 서버,채널 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
     if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
       throw new ServerException(SERVER_NOT_FOUND);
     }
-
     if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
       throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
     }
@@ -168,18 +163,15 @@ public class ChatService {
     messagingTemplate.convertAndSend(channelUrl, newMessageDto);
   }
 
-  public ChatListResponseDto list(Long serverId, Long channelId) {
+  public ChatListResponseDto chatList(Long serverId, Long channelId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버 참여자인지 확인
+    // 해당 서버,채널 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
-    // 현재는 참여자확인만 이루어짐
     if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
       throw new ServerException(SERVER_NOT_FOUND);
     }
-
     if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
       throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
     }
@@ -192,18 +184,38 @@ public class ChatService {
         .build();
   }
 
+  public ChatListResponseDto chatListPrevious(Long serverId, Long channelId, Long chatId) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버,채널 참여자인지 확인
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
+      throw new ServerException(SERVER_NOT_FOUND);
+    }
+    if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
+      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
+    }
+
+    // 주어진 chatId의 앞50개 fetch
+    List<ChatInfoDto> chatInfoDtoList = chatRepository
+        .fetchChatInfoDtoListByChannelIdAndChatId(channelId, chatId);
+
+    return ChatListResponseDto.builder()
+        .chatList(chatInfoDtoList)
+        .build();
+  }
+
   @Transactional
   public void delete(Long serverId, Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버 참여자인지 확인
+    // 해당 서버,채널 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
     if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
       throw new ServerException(SERVER_NOT_FOUND);
     }
-
     if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
       throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
     }
@@ -225,9 +237,9 @@ public class ChatService {
     messagingTemplate.convertAndSend(channelUrl, newMessageDto);
   }
 
+  // todo 수정필요
   public ChatSearchResponseDto search(Long serverId, ChatSearchRequestDto requestDto, int page,
       int size) {
-//    List<ChatInfoDto>
     String keyword = requestDto.getKeyword();
     String username = requestDto.getUsername();
     String message = requestDto.getMessage();
@@ -235,10 +247,9 @@ public class ChatService {
     // 서버유저인지 검증
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버 참여자인지 확인
+    // 해당 서버,채널 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
     // todo role check
     // 현재는 참여자확인만 이루어짐
     if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
