@@ -9,6 +9,10 @@ import com.chat.domain.user.UserTemp;
 import com.chat.domain.user.UserTempReset;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.MessageDto;
+import com.chat.dto.MessageDto.MessageType;
+import com.chat.dto.user.ChangeAvatarRequestDto;
+import com.chat.dto.user.ChangePasswordRequestDto;
+import com.chat.dto.user.ChangeUsernameRequestDto;
 import com.chat.dto.user.FriendAcceptRequestDto;
 import com.chat.dto.user.FriendDeleteRequestDto;
 import com.chat.dto.user.FriendListResponseDto;
@@ -23,8 +27,6 @@ import com.chat.dto.user.RecoverTokenCheckResponseDto;
 import com.chat.dto.user.RegisterConfirmRequestDto;
 import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
-import com.chat.dto.user.ResetPasswordRequestDto;
-import com.chat.dto.user.ResetUsernameRequestDto;
 import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.dto.user.UserInfoForFriendListResponseDto;
 import com.chat.dto.user.UserInfoForFriendWaitingListResponseDto;
@@ -209,9 +211,9 @@ public class UserService {
 
   // 이메일 인증으로 유저 활성화
   @Transactional
-  public void registerConfirm(RegisterConfirmRequestDto registerConfirmRequestDto) {
-    String token = registerConfirmRequestDto.getToken();
-    String email = registerConfirmRequestDto.getEmail();
+  public void registerConfirm(RegisterConfirmRequestDto requestDto) {
+    String token = requestDto.getToken();
+    String email = requestDto.getEmail();
 
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -224,9 +226,10 @@ public class UserService {
     userTempRepository.delete(userTemp);
   }
 
-  public JwtTokenDto login(LoginRequestDto loginRequestDto) {
-    String email = loginRequestDto.getEmail();
-    String password = loginRequestDto.getPassword();
+  @Transactional
+  public JwtTokenDto login(LoginRequestDto requestDto) {
+    String email = requestDto.getEmail();
+    String password = requestDto.getPassword();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
@@ -342,10 +345,10 @@ public class UserService {
 
   // 비밀번호 복구 재설정
   @Transactional
-  public void recoverConfirm(RecoverConfirmRequestDto recoverConfirmRequestDto) {
-    String token = recoverConfirmRequestDto.getToken();
-    String email = recoverConfirmRequestDto.getEmail();
-    String password = passwordEncoder.encode(recoverConfirmRequestDto.getPassword() + pepper);
+  public void recoverConfirm(RecoverConfirmRequestDto requestDto) {
+    String token = requestDto.getToken();
+    String email = requestDto.getEmail();
+    String password = passwordEncoder.encode(requestDto.getPassword() + pepper);
 
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
@@ -359,27 +362,9 @@ public class UserService {
     userTempResetRepository.delete(userTempReset);
   }
 
-  // 비밀번호 재설정
-  @Transactional
-  public void resetPassword(ResetPasswordRequestDto resetPasswordRequestDto) {
-    String email = customUserDetailsService.getEmailByUserDetails();
-    String prevPassword = resetPasswordRequestDto.getPrevPassword();
-    String newPassword = passwordEncoder.encode(resetPasswordRequestDto.getNewPassword() + pepper);
-
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    // 비밀번호 재설정시 이전 비밀번호 확인
-    if (user.checkPassword(prevPassword + pepper, passwordEncoder)) {
-      user.resetPassword(newPassword);
-      userRepository.save(user);
-      return;
-    }
-    throw new UserException(PASSWORD_MISMATCH);
-  }
-
   // 사용자명 재설정
   @Transactional
-  public void resetUsername(ResetUsernameRequestDto requestDto) {
+  public void changeUsername(ChangeUsernameRequestDto requestDto) {
     String email = customUserDetailsService.getEmailByUserDetails();
     String username = requestDto.getUsername();
     // 유저검색
@@ -390,8 +375,25 @@ public class UserService {
     validUsernameDuplicate(username);
 
     // 사용자명 재설정
-    user.resetUsername(username);
+    user.changeUsername(username);
     userRepository.save(user);
+  }
+  // 비밀번호 재설정
+  @Transactional
+  public void changePassword(ChangePasswordRequestDto requestDto) {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    String prevPassword = requestDto.getPrevPassword();
+    String newPassword = passwordEncoder.encode(requestDto.getNewPassword() + pepper);
+
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    // 비밀번호 재설정시 이전 비밀번호 확인
+    if (user.checkPassword(prevPassword + pepper, passwordEncoder)) {
+      user.changePassword(newPassword);
+      userRepository.save(user);
+      return;
+    }
+    throw new UserException(PASSWORD_MISMATCH);
   }
 
   // 유저 삭제
@@ -448,9 +450,9 @@ public class UserService {
     Long id = requestDto.getId();
     // 요청 보내는사람의 정보(id)를 요청받는사람(friendId)에게 보냄
     MessageDto newMessageDto = MessageDto.builder()
+        .messageType(MessageType.FRIEND_REQUEST)
         .userId(id)
         .username(username)
-        .friendRequest(true)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }
@@ -519,9 +521,9 @@ public class UserService {
     String userUrl = SUB_USER + friendId;
     // 요청 수락한 유저(id)의 정보를 요청 신청했던유저(friendId)가 받아서 상태갱신
     MessageDto newMessageDto = MessageDto.builder()
+        .messageType(MessageType.FRIEND_ACCEPT)
         .userId(id)
         .username(username)
-        .friendAccept(true)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }
@@ -568,9 +570,9 @@ public class UserService {
     String userUrl = SUB_USER + friendId;
     // 친구삭제대상(friendId)에게 친구삭제 요청을 보낸유저(id)의 정보를 보냄
     MessageDto newMessageDto = MessageDto.builder()
+        .messageType(MessageType.FRIEND_DELETE)
         .userId(id)
         .username(username)
-        .friendDelete(true)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }

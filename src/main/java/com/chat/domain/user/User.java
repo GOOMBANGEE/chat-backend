@@ -89,12 +89,12 @@ public class User {
   }
 
   // 비밀번호 재설정
-  public void resetPassword(String password) {
+  public void changePassword(String password) {
     this.password = password;
   }
 
   // 사용자명 재설정
-  public void resetUsername(String username) {
+  public void changeUsername(String username) {
     this.username = username;
   }
 

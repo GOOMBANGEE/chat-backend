@@ -9,14 +9,17 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ResetUsernameRequestDto {
+public class ChangeUsernameRequestDto {
+
+  private Long id;
 
   @NotBlank(message = "VALID:USERNAME_FORM_ERROR")
   @Size(min = 2, max = 20, message = "VALID:USERNAME_FORM_ERROR")
   private String username;
 
   @Builder
-  public ResetUsernameRequestDto(String username) {
+  public ChangeUsernameRequestDto(Long id, String username) {
+    this.id = id;
     this.username = username;
   }
 }

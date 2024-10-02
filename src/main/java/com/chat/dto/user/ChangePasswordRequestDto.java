@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ResetPasswordRequestDto {
+public class ChangePasswordRequestDto {
 
   @NotBlank(message = "VALID:PASSWORD_FORM_ERROR")
   @Size(min = 8, max = 20, message = "VALID:PASSWORD_FORM_ERROR")
@@ -23,7 +23,7 @@ public class ResetPasswordRequestDto {
   private String newPassword;
 
   @Builder
-  public ResetPasswordRequestDto(String prevPassword, String newPassword) {
+  public ChangePasswordRequestDto(String prevPassword, String newPassword) {
     this.prevPassword = prevPassword;
     this.newPassword = newPassword;
   }

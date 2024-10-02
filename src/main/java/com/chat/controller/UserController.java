@@ -2,6 +2,9 @@ package com.chat.controller;
 
 import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.JwtTokenDto;
+import com.chat.dto.user.ChangeAvatarRequestDto;
+import com.chat.dto.user.ChangePasswordRequestDto;
+import com.chat.dto.user.ChangeUsernameRequestDto;
 import com.chat.dto.user.EmailCheckRequestDto;
 import com.chat.dto.user.FriendAcceptRequestDto;
 import com.chat.dto.user.FriendDeleteRequestDto;
@@ -19,8 +22,6 @@ import com.chat.dto.user.RegisterConfirmRequestDto;
 import com.chat.dto.user.RegisterEmailSendRequestDto;
 import com.chat.dto.user.RegisterRequestDto;
 import com.chat.dto.user.RegisterTokenCheckResponseDto;
-import com.chat.dto.user.ResetPasswordRequestDto;
-import com.chat.dto.user.ResetUsernameRequestDto;
 import com.chat.dto.user.UserDeleteRequestDto;
 import com.chat.dto.user.UsernameCheckRequestDto;
 import com.chat.exception.UserException;
@@ -123,6 +124,7 @@ public class UserController {
       throw new UserException(TOKEN_INVALID);
     }
     // refresh token으로 access token 재발급
+    userService.refresh(refreshToken);
     String accessToken = tokenProvider.refreshAccessToken(refreshToken);
     return ResponseEntity.ok()
         .header(AUTHORIZATION, BEARER_PREFIX + accessToken)
@@ -171,19 +173,28 @@ public class UserController {
     return ResponseEntity.ok(null);
   }
 
-  // 비밀번호 재설정
-  @PostMapping("/reset/password")
-  public ResponseEntity<EmptyResponseDto> resetPassword(
-      @RequestBody @Valid ResetPasswordRequestDto requestDto) {
-    userService.resetPassword(requestDto);
+  // 사용자명 재설정
+  @PostMapping("/change/username")
+  public ResponseEntity<EmptyResponseDto> changeUsername(
+      @RequestBody @Valid ChangeUsernameRequestDto requestDto) {
+    userService.changeUsername(requestDto);
     return ResponseEntity.ok(null);
   }
 
-  // 사용자명 재설정
-  @PostMapping("/reset/username")
-  public ResponseEntity<EmptyResponseDto> resetUsername(
-      @RequestBody @Valid ResetUsernameRequestDto requestDto) {
-    userService.resetUsername(requestDto);
+  // 아바타이미지 재설정
+  @PostMapping("/change/avatar")
+  public ResponseEntity<EmptyResponseDto> changeAvatar(
+      @RequestBody @Valid ChangeAvatarRequestDto requestDto) {
+    userService.changeAvatar(requestDto);
+    return ResponseEntity.ok(null);
+  }
+
+
+  // 비밀번호 재설정
+  @PostMapping("/change/password")
+  public ResponseEntity<EmptyResponseDto> changePassword(
+      @RequestBody @Valid ChangePasswordRequestDto requestDto) {
+    userService.changePassword(requestDto);
     return ResponseEntity.ok(null);
   }
 
