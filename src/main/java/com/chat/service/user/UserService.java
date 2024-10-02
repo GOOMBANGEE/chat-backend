@@ -44,7 +44,14 @@ import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
 import com.chat.util.UUIDGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +95,9 @@ public class UserService {
   private static final String EMAIL_OR_PASSWORD_ERROR = "USER:EMAIL_OR_PASSWORD_ERROR";
   private static final String EMAIL_ACTIVATE_REQUIRE = "USER:EMAIL_ACTIVATE_REQUIRE";
   private static final String USER_NOT_FOUND = "USER:USER_NOT_FOUND";
+  private static final String IMAGE_INVALID = "USER:IMAGE_INVALID";
+  private static final String IMAGE_SAVE_ERROR = "USER:IMAGE_SAVE_ERROR";
+  private static final String IMAGE_DELETE_ERROR = "USER:IMAGE_DELETE_ERROR";
   private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
   private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
   private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
@@ -101,6 +111,10 @@ public class UserService {
   private String frontUrl;
   @Value("${server.pepper}")
   private String pepper;
+  @Value("${server.image-path.avatar}")
+  private String imagePathAvatar;
+  @Value("${server.time-zone}")
+  private String timeZone;
 
 
   // 가입시 해당 이메일로 가입된 유저가 있는지 체크
@@ -378,6 +392,77 @@ public class UserService {
     user.changeUsername(username);
     userRepository.save(user);
   }
+
+  // 아바타이미지 재설정
+  @Transactional
+  public void changeAvatar(ChangeAvatarRequestDto requestDto) throws IOException {
+    String email = customUserDetailsService.getEmailByUserDetails();
+    // 유저검색
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    String avatar = requestDto.getAvatar();
+    // base64 데이터 검증 및 분리
+    if (avatar == null || !avatar.contains(",")) {
+      throw new UserException(IMAGE_INVALID);
+    }
+    String[] parts = avatar.split(",");
+    String metadata = parts[0];  // "data:image/png;base64"
+    String base64Data = parts[1];  // 실제 base64 데이터
+
+    // 이미지 확장자 추출
+    String extension = getFileExtensionFromBase64(metadata);
+    if (extension == null) {
+      throw new UserException(IMAGE_INVALID);
+    }
+
+    // base64 데이터를 바이트 배열로 디코딩
+    byte[] decode = Base64.getDecoder().decode(base64Data);
+
+    // 현재 시간 millisecond
+    ZoneId zoneid = ZoneId.of(timeZone);
+    long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
+
+    String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
+    String filePath = imagePathAvatar + File.separator + fileName;
+
+    Files.createDirectories(Paths.get(imagePathAvatar));
+    try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+      fileOutputStream.write(decode);
+    } catch (IOException e) {
+      throw new UserException(IMAGE_SAVE_ERROR);
+    }
+
+    // 기존 이미지 삭제
+    String oldAvatarPath = user.fetchAvatarPathForDeleteChangeAvatar();
+    if (oldAvatarPath != null) {
+      try {
+        Files.deleteIfExists(Paths.get(oldAvatarPath));
+      } catch (IOException e) {
+        throw new UserException(IMAGE_DELETE_ERROR);
+      }
+    }
+
+    // 새로운 이미지 저장
+    user.changeAvatar(filePath);
+    userRepository.save(user);
+  }
+
+  // base64 문자열에서 이미지 확장자 추출
+  private String getFileExtensionFromBase64(String metadata) {
+    if (metadata.contains("image/jpeg")) {
+      return "jpg";
+    } else if (metadata.contains("image/png")) {
+      return "png";
+    } else if (metadata.contains("image/gif")) {
+      return "gif";
+    } else if (metadata.contains("image/webp")) {
+      return "webp";
+    } else {
+      return null;  // 지원하지 않는 파일 형식
+    }
+  }
+
   // 비밀번호 재설정
   @Transactional
   public void changePassword(ChangePasswordRequestDto requestDto) {

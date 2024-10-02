@@ -37,15 +37,23 @@ public class User {
 
   private boolean logicDelete;
 
+  private String avatarImage;
+
+  // login, refresh 요청시 갱신
+  private LocalDateTime lastLogin;
+
+  private boolean online;
+
   @Builder
   public User(String email, String username, String password, LocalDateTime registerDate,
-      boolean activated, boolean logicDelete) {
+      boolean activated, boolean logicDelete, String avatarImage) {
     this.email = email;
     this.username = username;
     this.password = password;
     this.registerDate = registerDate;
     this.activated = activated;
     this.logicDelete = logicDelete;
+    this.avatarImage = avatarImage;
   }
 
   public org.springframework.security.core.userdetails.User buildUserDetails(
@@ -88,15 +96,26 @@ public class User {
     return passwordEncoder.matches(password, this.password);
   }
 
+  // 사용자명 재설정
+  public void changeUsername(String username) {
+    this.username = username;
+  }
+
+  // 아바타 재설정
+  public void changeAvatar(String avatarImage) {
+    this.avatarImage = avatarImage;
+  }
+
+  public String fetchAvatarPathForDeleteChangeAvatar() {
+    return this.avatarImage;
+  }
+
+
   // 비밀번호 재설정
   public void changePassword(String password) {
     this.password = password;
   }
 
-  // 사용자명 재설정
-  public void changeUsername(String username) {
-    this.username = username;
-  }
 
   // 유저 삭제
   public void logicDelete() {

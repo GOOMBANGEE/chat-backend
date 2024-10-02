@@ -23,6 +23,9 @@ public class UserException extends RuntimeException {
       case "USER:CODE_INVALID" -> ErrorResponseDto.build(id, "인증코드가 유효하지 않습니다");
       case "USER:GET_AUTHENTICATION_FAIL" -> ErrorResponseDto.build(id, "인증정보가 유효하지 않습니다");
       case "USER:USER_NOT_FOUND" -> ErrorResponseDto.build(id, "유저 정보를 찾을 수 없습니다");
+      case "USER:IMAGE_INVALID" -> ErrorResponseDto.build(id, "이미지 형식이 올바르지 않습니다");
+      case "USER:IMAGE_SAVE_ERROR" -> ErrorResponseDto.build(id, "이미지 저장중 오류가 발생했습니다");
+      case "USER:IMAGE_DELETE_ERROR" -> ErrorResponseDto.build(id, "기존 이미지 삭제중 오류가 발생했습니다");
       case "USER:USER_ALREADY_FRIEND" -> ErrorResponseDto.build(id, "이미 등록된 유저입니다");
       case "USER:USER_ALREADY_SENT_REQUEST" -> ErrorResponseDto.build(id, "상대방의 응답을 기다리는중입니다");
       case "USER:USER_FRIEND_TEMP_NOT_FOUND" -> ErrorResponseDto.build(id, "존재하지 않는 요청입니다");
