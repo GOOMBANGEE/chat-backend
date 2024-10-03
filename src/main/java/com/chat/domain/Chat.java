@@ -69,13 +69,14 @@ public class Chat {
     return this.id;
   }
 
-  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto) {
+  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto, String avatar) {
     return MessageDto.builder()
         .messageType(messageDto.getMessageType())
         .serverId(messageDto.getServerId())
         .channelId(messageDto.getChannelId())
         .chatId(this.id)
         .username(messageDto.getUsername())
+        .avatar(avatar)
         .message(this.message)
         .createTime(this.createTime)
         .build();

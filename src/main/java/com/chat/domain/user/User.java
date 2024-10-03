@@ -154,4 +154,8 @@ public class User {
   public Long fetchUserIdForCreateToken() {
     return this.id;
   }
+
+  public String fetchAvatarForSendMessageResponse() {
+    return this.avatarImageSmall;
+  }
 }

@@ -18,11 +18,15 @@ public class SendMessageResponseDto {
 
   private LocalDateTime createTime;
 
+  private String avatar;
+
   @Builder
-  public SendMessageResponseDto(Long serverId, Long channelId, Long id, LocalDateTime createTime) {
+  public SendMessageResponseDto(Long serverId, Long channelId, Long id, LocalDateTime createTime,
+      String avatar) {
     this.serverId = serverId;
     this.channelId = channelId;
     this.id = id;
     this.createTime = createTime;
+    this.avatar = avatar;
   }
 }

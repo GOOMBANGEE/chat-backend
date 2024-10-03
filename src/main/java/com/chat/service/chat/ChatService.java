@@ -108,7 +108,8 @@ public class ChatService {
 
     // stomp pub
     String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
-    MessageDto newMessageDto = chat.buildMessageDtoForSendMessageResponse(messageDto);
+    String avatar = user.fetchAvatarForSendMessageResponse();
+    MessageDto newMessageDto = chat.buildMessageDtoForSendMessageResponse(messageDto, avatar);
     TransactionSynchronizationManager.registerSynchronization(
         new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
     );
@@ -120,6 +121,7 @@ public class ChatService {
         .channelId(channelId)
         .id(id)
         .createTime(createTime)
+        .avatar(avatar)
         .build();
   }
 

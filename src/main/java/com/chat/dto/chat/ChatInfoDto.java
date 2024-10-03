@@ -15,6 +15,8 @@ public class ChatInfoDto {
 
   private String username;
 
+  private String avatarImageSmall;
+
   private String message;
 
   private boolean enter;
@@ -25,10 +27,11 @@ public class ChatInfoDto {
 
   @QueryProjection
   @Builder
-  public ChatInfoDto(Long id, String username, String message, boolean enter,
-      LocalDateTime createTime, LocalDateTime updateTime) {
+  public ChatInfoDto(Long id, String username, String avatarImageSmall, String message,
+      boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
     this.id = id;
     this.username = username;
+    this.avatarImageSmall = avatarImageSmall;
     this.message = message;
     this.enter = enter;
     this.createTime = createTime;
