@@ -111,6 +111,7 @@ public class UserService {
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_USER = "/sub/user/";
+  private static final String SUB_SERVER = "/sub/server/";
   private final ObjectMapper mapper = new ObjectMapper();
 
   @Value("${server.front-url}")
@@ -478,6 +479,21 @@ public class UserService {
     // 새로운 이미지 경로 저장
     user.changeAvatar(filePathSmall, filePathLarge);
     userRepository.save(user);
+
+    // 유저가 속해있는 serverList 에 메시지 발행
+    Long userId = user.fetchUserIdForChangeAvatar();
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
+    serverIdList.forEach(serverId -> CompletableFuture.runAsync(() -> {
+      String serverUrl = SUB_SERVER + serverId;
+      MessageDto messageDto = MessageDto.builder()
+          .messageType(MessageType.USER_UPDATE_AVATAR)
+          .serverId(serverId)
+          .userId(userId)
+          .message(filePathSmall)
+          .build();
+      messagingTemplate.convertAndSend(serverUrl, messageDto);
+    }));
 
     return ChangeAvatarResponseDto.builder()
         .avatarImageSmall(filePathSmall)

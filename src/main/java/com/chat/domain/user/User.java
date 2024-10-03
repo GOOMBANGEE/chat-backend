@@ -117,6 +117,10 @@ public class User {
     this.avatarImageLarge = avatarImageLarge;
   }
 
+  public Long fetchUserIdForChangeAvatar() {
+    return this.id;
+  }
+
   public Map<String, String> fetchAvatarPathMapForDeleteChangeAvatar() {
     Map<String, String> avatarPathMap = new HashMap<>();
 
