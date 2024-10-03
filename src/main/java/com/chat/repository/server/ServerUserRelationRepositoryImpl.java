@@ -72,6 +72,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
             new QServerUserInfoDto(
                 qServerUserRelation.user.id,
                 qServerUserRelation.user.username,
+                qServerUserRelation.user.avatarImageSmall,
                 qServerUserRelation.user.online))
         .from(qServerUserRelation)
         .join(qServerUserRelation.user, qUser)

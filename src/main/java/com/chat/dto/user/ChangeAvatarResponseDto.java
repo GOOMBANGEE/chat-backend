@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChangeAvatarResponseDto {
 
-  private String avatar;
+  private String avatarImageSmall;
 
   @Builder
-  public ChangeAvatarResponseDto(String avatar) {
-    this.avatar = avatar;
+  public ChangeAvatarResponseDto(String avatarImageSmall) {
+    this.avatarImageSmall = avatarImageSmall;
   }
 }

@@ -45,7 +45,9 @@ import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
 import com.chat.util.UUIDGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.FileOutputStream;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -53,8 +55,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -426,32 +431,55 @@ public class UserService {
     ZoneId zoneid = ZoneId.of(timeZone);
     long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
 
-    String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
-    String filePath = imagePathAvatar + fileName;
+    String fileName = uuidGenerator.generateUUID() + "_" + epochMilli;
+    String fileNameSmall = fileName + "_small." + extension;
+    String fileNameLarge = fileName + "_large." + extension;
 
+    String filePathSmall = imagePathAvatar + fileNameSmall;
+    String filePathLarge = imagePathAvatar + fileNameLarge;
+
+    BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
+
+    // 폴더없는경우 생성
     Files.createDirectories(Paths.get(imagePathAvatar));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
-      fileOutputStream.write(decode);
+
+    try {
+      // 이미지 리사이징 후 저장 (작은 이미지)
+      Thumbnails.of(originalImage)
+          .size(32, 32)
+          .toFile(new File(filePathSmall));
+
+      // 이미지 리사이징 후 저장 (큰 이미지)
+      Thumbnails.of(originalImage)
+          .size(100, 100)
+          .toFile(new File(filePathLarge));
     } catch (IOException e) {
       throw new UserException(IMAGE_SAVE_ERROR);
     }
 
     // 기존 이미지 삭제
-    String oldAvatarPath = user.fetchAvatarPathForDeleteChangeAvatar();
-    if (oldAvatarPath != null) {
+    Map<String, String> avatarPathMap = user.fetchAvatarPathMapForDeleteChangeAvatar();
+    if (avatarPathMap != null) {
       try {
-        Files.deleteIfExists(Paths.get(oldAvatarPath));
+        String small = avatarPathMap.get("small");
+        String large = avatarPathMap.get("large");
+        if (small != null) {
+          Files.deleteIfExists(Paths.get(small));
+        }
+        if (large != null) {
+          Files.deleteIfExists(Paths.get(large));
+        }
       } catch (IOException e) {
         throw new UserException(IMAGE_DELETE_ERROR);
       }
     }
 
-    // 새로운 이미지 저장
-    user.changeAvatar(filePath);
+    // 새로운 이미지 경로 저장
+    user.changeAvatar(filePathSmall, filePathLarge);
     userRepository.save(user);
 
     return ChangeAvatarResponseDto.builder()
-        .avatar(filePath)
+        .avatarImageSmall(filePathSmall)
         .build();
   }
 
@@ -463,8 +491,6 @@ public class UserService {
       return "png";
     } else if (metadata.contains("image/gif")) {
       return "gif";
-    } else if (metadata.contains("image/webp")) {
-      return "webp";
     } else {
       return null;  // 지원하지 않는 파일 형식
     }

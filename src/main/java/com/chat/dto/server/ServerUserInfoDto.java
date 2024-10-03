@@ -14,10 +14,13 @@ public class ServerUserInfoDto {
 
   private String username;
 
+  private String avatarImageSmall;
+
   @QueryProjection
   @Builder
-  public ServerUserInfoDto(Long id, String username) {
+  public ServerUserInfoDto(Long id, String username, String avatarImageSmall) {
     this.id = id;
     this.username = username;
+    this.avatarImageSmall = avatarImageSmall;
   }
 }

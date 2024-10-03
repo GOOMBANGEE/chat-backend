@@ -9,7 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -38,8 +40,9 @@ public class User {
 
   private boolean logicDelete;
 
-  private String avatarImage;
+  private String avatarImageSmall;
 
+  private String avatarImageLarge;
   // login, refresh 요청시 갱신
   private LocalDateTime lastLogin;
 
@@ -47,14 +50,15 @@ public class User {
 
   @Builder
   public User(String email, String username, String password, LocalDateTime registerDate,
-      boolean activated, boolean logicDelete, String avatarImage) {
+      boolean activated, boolean logicDelete, String avatarImageSmall, String avatarImageLarge) {
     this.email = email;
     this.username = username;
     this.password = password;
     this.registerDate = registerDate;
     this.activated = activated;
     this.logicDelete = logicDelete;
-    this.avatarImage = avatarImage;
+    this.avatarImageSmall = avatarImageSmall;
+    this.avatarImageLarge = avatarImageLarge;
   }
 
   public org.springframework.security.core.userdetails.User buildUserDetails(
@@ -80,8 +84,8 @@ public class User {
 
   // 사용자정보 fetch
   public ProfileResponseDto buildProfileResponseDto(String imagePathAvatar) {
-    String avatarUrl = (this.avatarImage != null)
-        ? imagePathAvatar + Paths.get(this.avatarImage).getFileName().toString()
+    String avatarUrl = (this.avatarImageSmall != null)
+        ? imagePathAvatar + Paths.get(this.avatarImageSmall).getFileName().toString()
         : null;
 
     return ProfileResponseDto.builder()
@@ -108,20 +112,23 @@ public class User {
   }
 
   // 아바타 재설정
-  public void changeAvatar(String avatarImage) {
-    this.avatarImage = avatarImage;
+  public void changeAvatar(String avatarImageSmall, String avatarImageLarge) {
+    this.avatarImageSmall = avatarImageSmall;
+    this.avatarImageLarge = avatarImageLarge;
   }
 
-  public String fetchAvatarPathForDeleteChangeAvatar() {
-    return this.avatarImage;
-  }
+  public Map<String, String> fetchAvatarPathMapForDeleteChangeAvatar() {
+    Map<String, String> avatarPathMap = new HashMap<>();
 
+    avatarPathMap.put("small", this.avatarImageSmall);
+    avatarPathMap.put("large", this.avatarImageLarge);
+    return avatarPathMap;
+  }
 
   // 비밀번호 재설정
   public void changePassword(String password) {
     this.password = password;
   }
-
 
   // 유저 삭제
   public void logicDelete() {
