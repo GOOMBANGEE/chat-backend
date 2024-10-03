@@ -11,6 +11,7 @@ import com.chat.dto.JwtTokenDto;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.user.ChangeAvatarRequestDto;
+import com.chat.dto.user.ChangeAvatarResponseDto;
 import com.chat.dto.user.ChangePasswordRequestDto;
 import com.chat.dto.user.ChangeUsernameRequestDto;
 import com.chat.dto.user.FriendAcceptRequestDto;
@@ -396,7 +397,8 @@ public class UserService {
 
   // 아바타이미지 재설정
   @Transactional
-  public void changeAvatar(ChangeAvatarRequestDto requestDto) throws IOException {
+  public ChangeAvatarResponseDto changeAvatar(ChangeAvatarRequestDto requestDto)
+      throws IOException {
     String email = customUserDetailsService.getEmailByUserDetails();
     // 유저검색
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -447,6 +449,10 @@ public class UserService {
     // 새로운 이미지 저장
     user.changeAvatar(filePath);
     userRepository.save(user);
+
+    return ChangeAvatarResponseDto.builder()
+        .avatar(filePath)
+        .build();
   }
 
   // base64 문자열에서 이미지 확장자 추출

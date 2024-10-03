@@ -3,6 +3,7 @@ package com.chat.controller;
 import com.chat.dto.EmptyResponseDto;
 import com.chat.dto.JwtTokenDto;
 import com.chat.dto.user.ChangeAvatarRequestDto;
+import com.chat.dto.user.ChangeAvatarResponseDto;
 import com.chat.dto.user.ChangePasswordRequestDto;
 import com.chat.dto.user.ChangeUsernameRequestDto;
 import com.chat.dto.user.EmailCheckRequestDto;
@@ -184,10 +185,10 @@ public class UserController {
 
   // 아바타이미지 재설정
   @PostMapping("/change/avatar")
-  public ResponseEntity<EmptyResponseDto> changeAvatar(
+  public ResponseEntity<ChangeAvatarResponseDto> changeAvatar(
       @RequestBody ChangeAvatarRequestDto requestDto) throws IOException {
-    userService.changeAvatar(requestDto);
-    return ResponseEntity.ok(null);
+    ChangeAvatarResponseDto responseDto = userService.changeAvatar(requestDto);
+    return ResponseEntity.ok(responseDto);
   }
 
 
