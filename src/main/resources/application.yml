@@ -5,6 +5,7 @@ server:
   cors-urls: ${SERVER_CORS_URLS}
   pepper: ${SERVER_PEPPER}
   image-path:
+    base: ${SERVER_IMAGE_PATH_BASE}
     avatar: ${SERVER_IMAGE_PATH_AVATAR}
   time-zone: ${SERVER_TIME_ZONE}
 

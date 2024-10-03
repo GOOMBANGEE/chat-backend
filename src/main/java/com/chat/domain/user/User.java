@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AccessLevel;
@@ -78,11 +79,16 @@ public class User {
   }
 
   // 사용자정보 fetch
-  public ProfileResponseDto buildProfileResponseDto() {
+  public ProfileResponseDto buildProfileResponseDto(String imagePathAvatar) {
+    String avatarUrl = (this.avatarImage != null)
+        ? imagePathAvatar + Paths.get(this.avatarImage).getFileName().toString()
+        : null;
+
     return ProfileResponseDto.builder()
         .id(this.id)
         .email(this.email)
         .username(this.username)
+        .avatar(avatarUrl)
         .build();
   }
 

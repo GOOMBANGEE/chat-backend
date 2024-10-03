@@ -44,7 +44,6 @@ import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
 import com.chat.util.UUIDGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -295,6 +294,8 @@ public class UserService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
     return user.buildProfileResponseDto();
+
+    return user.buildProfileResponseDto(imagePathAvatar);
   }
 
   // 비밀번호 분실히 비밀번호 찾기
@@ -424,7 +425,7 @@ public class UserService {
     long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
 
     String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
-    String filePath = imagePathAvatar + File.separator + fileName;
+    String filePath = imagePathAvatar + fileName;
 
     Files.createDirectories(Paths.get(imagePathAvatar));
     try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {

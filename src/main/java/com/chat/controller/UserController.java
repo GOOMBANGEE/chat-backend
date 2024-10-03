@@ -29,6 +29,7 @@ import com.chat.jwt.TokenProvider;
 import com.chat.service.user.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -184,7 +185,7 @@ public class UserController {
   // 아바타이미지 재설정
   @PostMapping("/change/avatar")
   public ResponseEntity<EmptyResponseDto> changeAvatar(
-      @RequestBody @Valid ChangeAvatarRequestDto requestDto) {
+      @RequestBody ChangeAvatarRequestDto requestDto) throws IOException {
     userService.changeAvatar(requestDto);
     return ResponseEntity.ok(null);
   }

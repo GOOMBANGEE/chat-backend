@@ -9,6 +9,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -19,6 +20,10 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Value("#{'${server.cors-urls}'.split(',')}")
   private List<String> corsUrlList;
+  @Value("${server.image-path.base}")
+  private String imagePathBase;
+  @Value("${server.image-path.avatar}")
+  private String imagePathAvatar;
 
   @Override
   public void addCorsMappings(@NonNull CorsRegistry registry) {
@@ -28,6 +33,12 @@ public class WebConfig implements WebMvcConfigurer {
           .allowedMethods("GET", "POST", "PUT", "DELETE")
           .allowCredentials(true);
     }
+  }
+
+  @Override
+  public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    registry.addResourceHandler("/image/avatar/**") // 이 경로를 통해 이미지에 접근시
+        .addResourceLocations("file:" + imagePathBase + imagePathAvatar); // 실제 이미지 저장 경로접근
   }
 
   @Bean
