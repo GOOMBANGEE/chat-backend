@@ -443,6 +443,24 @@ public class UserService {
     // 사용자명 재설정
     user.changeUsername(username);
     userRepository.save(user);
+
+    // 바뀐 사용자명 각 서버에 메시지 전송
+    // 유저가 참여중인 서버의 id 리스트
+    Long userId = requestDto.getId();
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
+    serverIdList.forEach(
+        serverId -> {
+          String serverUrl = SUB_SERVER + serverId;
+          MessageDto newMessageDto = MessageDto.builder()
+              .messageType(MessageType.USER_UPDATE_USERNAME)
+              .serverId(serverId)
+              .userId(userId)
+              .username(username)
+              .build();
+          messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+        }
+    );
   }
 
   // 아바타이미지 재설정
