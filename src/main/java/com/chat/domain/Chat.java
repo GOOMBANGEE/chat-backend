@@ -27,6 +27,10 @@ public class Chat {
 
   private String message;
 
+  private String attachmentType;
+
+  private String attachment;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private Server server;
@@ -48,10 +52,12 @@ public class Chat {
   private LocalDateTime updateTime;
 
   @Builder
-  public Chat(Long id, String message, Server server, Channel channel, User user,
+  public Chat(String message, String attachmentType, String attachment, Server server,
+      Channel channel, User user,
       boolean logicDelete, boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
-    this.id = id;
     this.message = message;
+    this.attachmentType = attachmentType;
+    this.attachment = attachment;
     this.server = server;
     this.channel = channel;
     this.user = user;
@@ -78,6 +84,8 @@ public class Chat {
         .username(messageDto.getUsername())
         .avatar(avatar)
         .message(this.message)
+        .attachmentType(this.attachmentType)
+        .attachment(this.attachment)
         .createTime(this.createTime)
         .build();
   }

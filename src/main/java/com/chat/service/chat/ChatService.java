@@ -22,15 +22,24 @@ import com.chat.exception.UserException;
 import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
-import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
+import com.chat.util.UUIDGenerator;
 import com.chat.util.websocket.StompAfterCommitSynchronization;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,7 +62,7 @@ public class ChatService {
   private final ChannelRepository channelRepository;
   private final ChatRepository chatRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
-  private final ServerRepository serverRepository;
+  private final UUIDGenerator uuidGenerator;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -61,14 +70,32 @@ public class ChatService {
   private static final String PAGE_INVALID = "VALID:PAGE_INVALID";
   private static final String CHANNEL_NOT_FOUND = "CHANNEL:CHANNEL_NOT_FOUND";
   private static final String CHANNEL_NOT_PARTICIPATED = "CHANNEL:CHANNEL_NOT_PARTICIPATED";
+  private static final String UNSUPPORTED_FILE_TYPE = "CHAT:UNSUPPORTED_FILE_TYPE";
 
   private final SimpMessagingTemplate messagingTemplate;
-  private static final String SUB_SERVER = "/sub/server/";
   private static final String SUB_CHANNEL = "/sub/channel/";
+  private static final String EXTENSION = "extension";
+  private static final String PATH = "path";
 
+  @Value("${server.file-path.chat.audio}")
+  private String filePathChatAudio;
+  @Value("${server.file-path.chat.image}")
+  private String filePathChatImage;
+  @Value("${server.file-path.chat.text}")
+  private String filePathChatText;
+  @Value("${server.file-path.chat.video}")
+  private String filePathChatVideo;
+  @Value("${server.file-path.chat.application.json}")
+  private String filePathChatJson;
+  @Value("${server.file-path.chat.application.pdf}")
+  private String filePathChatPdf;
+  @Value("${server.file-path.chat.application.zip}")
+  private String filePathChatApplicationZip;
+  @Value("${server.time-zone}")
+  private String timeZone;
 
   @Transactional
-  public SendMessageResponseDto sendMessage(MessageDto messageDto) {
+  public SendMessageResponseDto sendMessage(MessageDto messageDto) throws IOException {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     Long serverId = messageDto.getServerId();
@@ -86,10 +113,46 @@ public class ChatService {
             channel, user)
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_PARTICIPATED));
 
+    // attachment logic
+    String attachment = messageDto.getAttachment();
+    String mimeType = null;
+    String filePath = null;
+    if (attachment != null) {
+      String[] base64 = attachment.split(",");
+      // mimeType -> data:image/jpeg,png,gif,bmp,webp, video/mp4,mpeg,ogg,
+      // audio/mpeg,wav,ogg,mp4, text/plain, application/json,pdf,zip
+      String metadata = base64[0];
+      String base64Data = base64[1];
+      mimeType = metadata.split(":")[1].split(";")[0];  // image/png
+
+      // 파일 확장자, 폴더 결정
+      Map<String, String> attachmentInfo = getFileInfoFromMimeType(mimeType);
+      if (attachmentInfo.get(EXTENSION) == null) {
+        throw new ChatException(UNSUPPORTED_FILE_TYPE);
+      }
+      String extension = attachmentInfo.get(EXTENSION);
+      String path = attachmentInfo.get(PATH);
+
+      // base64 데이터를 바이트 배열로 디코딩
+      byte[] decode = Base64.getDecoder().decode(base64Data);
+
+      // 현재 시간 millisecond
+      ZoneId zoneid = ZoneId.of(timeZone);
+      long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
+
+      String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
+      filePath = path + fileName;
+
+      // 파일 저장
+      Files.write(Paths.get(filePath), decode);
+    }
+
     LocalDateTime createTime = LocalDateTime.now();
     // 메세지 저장
     Chat chat = Chat.builder()
         .message(message)
+        .attachmentType(mimeType)
+        .attachment(filePath)
         .server(server)
         .channel(channel)
         .user(user)
@@ -123,6 +186,41 @@ public class ChatService {
         .createTime(createTime)
         .avatar(avatar)
         .build();
+  }
+
+  private Map<String, String> getFileInfoFromMimeType(String mimeType) {
+    // MIME 타입과 관련 정보 매핑
+    Map<String, String> mimeTypeMapping = Map.ofEntries(
+        Map.entry("audio/mpeg", "mp3:" + filePathChatAudio),
+        Map.entry("audio/wav", "wav" + filePathChatAudio),
+        Map.entry("audio/mp4", "aac" + filePathChatAudio),
+        Map.entry("image/jpeg", "jpg:" + filePathChatImage),
+        Map.entry("image/png", "png:" + filePathChatImage),
+        Map.entry("image/gif", "gif:" + filePathChatImage),
+        Map.entry("image/bmp", "bmp" + filePathChatImage),
+        Map.entry("image/webp", "webp" + filePathChatImage),
+        Map.entry("text/plain", "txt:" + filePathChatText),
+        Map.entry("video/mp4", "mp4" + filePathChatVideo),
+        Map.entry("video/mpeg", "mpeg" + filePathChatVideo),
+        Map.entry("video/ogg", "ogg" + filePathChatVideo),
+        Map.entry("application/json", "json" + filePathChatJson),
+        Map.entry("application/pdf", "pdf" + filePathChatPdf),
+        Map.entry("application/zip", "zip:" + filePathChatApplicationZip)
+    );
+
+    // MIME 타입에 따른 파일 정보 반환
+    String fileInfo = mimeTypeMapping.get(mimeType);
+    if (fileInfo == null) {
+      return Collections.emptyMap(); // 처리되지 않은 MIME 타입
+    }
+
+    // 파일 정보를 분리하여 반환
+    String[] parts = fileInfo.split(":");
+    Map<String, String> attachmentInfo = new HashMap<>();
+    attachmentInfo.put(EXTENSION, parts[0]);
+    attachmentInfo.put(PATH, parts[1]);
+
+    return attachmentInfo;
   }
 
   @Transactional

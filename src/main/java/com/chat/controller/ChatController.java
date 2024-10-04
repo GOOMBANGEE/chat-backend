@@ -10,6 +10,7 @@ import com.chat.service.chat.ChatService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,7 +37,8 @@ public class ChatController {
 
 
   @PostMapping("")
-  public ResponseEntity<SendMessageResponseDto> sendMessage(@RequestBody MessageDto messageDto) {
+  public ResponseEntity<SendMessageResponseDto> sendMessage(
+      @RequestBody MessageDto messageDto) throws IOException {
     SendMessageResponseDto responseDto = chatService.sendMessage(messageDto);
     return ResponseEntity.ok(responseDto);
   }

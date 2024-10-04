@@ -1,6 +1,9 @@
 package com.chat.config;
 
+import jakarta.annotation.PostConstruct;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,10 +23,39 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Value("#{'${server.cors-urls}'.split(',')}")
   private List<String> corsUrlList;
-  @Value("${server.image-path.base}")
-  private String imagePathBase;
-  @Value("${server.image-path.avatar}")
-  private String imagePathAvatar;
+
+  @Value("${server.file-path.base}")
+  private String filePathBase;
+  @Value("${server.file-path.chat.audio}")
+  private String filePathChatAudio;
+  @Value("${server.file-path.chat.image}")
+  private String filePathChatImage;
+  @Value("${server.file-path.chat.text}")
+  private String filePathChatText;
+  @Value("${server.file-path.chat.video}")
+  private String filePathChatVideo;
+  @Value("${server.file-path.chat.application.json}")
+  private String filePathChatJson;
+  @Value("${server.file-path.chat.application.pdf}")
+  private String filePathChatPdf;
+  @Value("${server.file-path.chat.application.zip}")
+  private String filePathChatApplicationZip;
+  @Value("${server.file-path.user.image.avatar}")
+  private String filePathUserImageAvatar;
+
+  private final Map<String, String> filePaths = new HashMap<>();
+
+  @PostConstruct
+  public void initFilePaths() {
+    filePaths.put("audio", filePathChatAudio);
+    filePaths.put("image", filePathChatImage);
+    filePaths.put("text", filePathChatText);
+    filePaths.put("video", filePathChatVideo);
+    filePaths.put("json", filePathChatJson);
+    filePaths.put("pdf", filePathChatPdf);
+    filePaths.put("zip", filePathChatApplicationZip);
+    filePaths.put("avatar", filePathUserImageAvatar);
+  }
 
   @Override
   public void addCorsMappings(@NonNull CorsRegistry registry) {
@@ -37,8 +69,11 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("/image/avatar/**") // 이 경로를 통해 이미지에 접근시
-        .addResourceLocations("file:" + imagePathBase + imagePathAvatar); // 실제 이미지 저장 경로접근
+    // 파일 경로를 반복문으로 처리하여 중복 코드 제거
+    filePaths.forEach((key, path) ->
+        registry.addResourceHandler(path + "**")
+            .addResourceLocations("file:" + filePathBase + path)
+    );
   }
 
   @Bean

@@ -4,9 +4,25 @@ server:
   front-url: ${SERVER_FRONT_URL}
   cors-urls: ${SERVER_CORS_URLS}
   pepper: ${SERVER_PEPPER}
-  image-path:
-    base: ${SERVER_IMAGE_PATH_BASE}
-    avatar: ${SERVER_IMAGE_PATH_AVATAR}
+  file-path:
+    base: ${SERVER_FILE_PATH_BASE}
+    chat:
+      base: /chat
+      audio: ${server.file-path.chat.base}/audio/
+      image: ${server.file-path.chat.base}/image/
+      text: ${server.file-path.chat.base}/text/
+      video: ${server.file-path.chat.base}/video/
+      application:
+        base: ${server.file-path.chat.base}/application
+        json: ${server.file-path.chat.application.base}/json/
+        pdf: ${server.file-path.chat.application.base}/pdf/
+        zip: ${server.file-path.chat.application.base}/zip/
+    user:
+      base: /user
+      image:
+        base: ${server.file-path.user.base}/image
+        avatar: ${server.file-path.user.image.base}/avatar/
+
   time-zone: ${SERVER_TIME_ZONE}
 
 spring:

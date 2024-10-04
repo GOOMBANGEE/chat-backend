@@ -44,7 +44,6 @@ import com.chat.repository.user.UserTempRepository;
 import com.chat.repository.user.UserTempResetRepository;
 import com.chat.service.MailService;
 import com.chat.util.UUIDGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -102,23 +101,20 @@ public class UserService {
   private static final String USER_NOT_FOUND = "USER:USER_NOT_FOUND";
   private static final String IMAGE_INVALID = "USER:IMAGE_INVALID";
   private static final String IMAGE_SAVE_ERROR = "USER:IMAGE_SAVE_ERROR";
-  private static final String IMAGE_DELETE_ERROR = "USER:IMAGE_DELETE_ERROR";
   private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
   private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
   private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
 
-
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_USER = "/sub/user/";
   private static final String SUB_SERVER = "/sub/server/";
-  private final ObjectMapper mapper = new ObjectMapper();
 
   @Value("${server.front-url}")
   private String frontUrl;
   @Value("${server.pepper}")
   private String pepper;
-  @Value("${server.image-path.avatar}")
-  private String imagePathAvatar;
+  @Value("${server.file-path.user.image.avatar}")
+  private String filePathUserImageAvatar;
   @Value("${server.time-zone}")
   private String timeZone;
 
@@ -346,7 +342,7 @@ public class UserService {
       messagingTemplate.convertAndSend(serverUrl, messageDto);
     }));
 
-    return user.buildProfileResponseDto(imagePathAvatar);
+    return user.buildProfileResponseDto(filePathUserImageAvatar);
   }
 
   // 비밀번호 분실히 비밀번호 찾기
@@ -477,12 +473,13 @@ public class UserService {
     if (avatar == null || !avatar.contains(",")) {
       throw new UserException(IMAGE_INVALID);
     }
-    String[] parts = avatar.split(",");
-    String metadata = parts[0];  // "data:image/png;base64"
-    String base64Data = parts[1];  // 실제 base64 데이터
+    String[] base64 = avatar.split(",");
+    String metadata = base64[0];  // data:image/png;base64
+    String base64Data = base64[1];  // 실제 base64 데이터
+    String mimeType = metadata.split(":")[1].split(";")[0]; // image/png
 
     // 이미지 확장자 추출
-    String extension = getFileExtensionFromBase64(metadata);
+    String extension = getFileExtensionFromMimeType(mimeType);
     if (extension == null) {
       throw new UserException(IMAGE_INVALID);
     }
@@ -498,13 +495,13 @@ public class UserService {
     String fileNameSmall = fileName + "_small." + extension;
     String fileNameLarge = fileName + "_large." + extension;
 
-    String filePathSmall = imagePathAvatar + fileNameSmall;
-    String filePathLarge = imagePathAvatar + fileNameLarge;
+    String filePathSmall = filePathUserImageAvatar + fileNameSmall;
+    String filePathLarge = filePathUserImageAvatar + fileNameLarge;
 
     BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
 
     // 폴더없는경우 생성
-    Files.createDirectories(Paths.get(imagePathAvatar));
+    Files.createDirectories(Paths.get(filePathUserImageAvatar));
 
     try {
       // 이미지 리사이징 후 저장 (작은 이미지)
@@ -545,12 +542,12 @@ public class UserService {
   }
 
   // base64 문자열에서 이미지 확장자 추출
-  private String getFileExtensionFromBase64(String metadata) {
-    if (metadata.contains("image/jpeg")) {
+  private String getFileExtensionFromMimeType(String mimeType) {
+    if (mimeType.startsWith("image/jpeg")) {
       return "jpg";
-    } else if (metadata.contains("image/png")) {
+    } else if (mimeType.startsWith("image/png")) {
       return "png";
-    } else if (metadata.contains("image/gif")) {
+    } else if (mimeType.startsWith("image/gif")) {
       return "gif";
     } else {
       return null;  // 지원하지 않는 파일 형식

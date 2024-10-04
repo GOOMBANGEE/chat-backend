@@ -37,6 +37,10 @@ public class MessageDto {
 
   private String message;
 
+  private String attachmentType;
+
+  private String attachment;
+
   private LocalDateTime createTime;
 
   private LocalDateTime updateTime;
@@ -44,7 +48,8 @@ public class MessageDto {
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long categoryId, Long channelId,
       Long chatId, Long userId, String username, String avatar, String message,
-      LocalDateTime createTime, LocalDateTime updateTime) {
+      String attachmentType, String attachment, LocalDateTime createTime,
+      LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
     this.categoryId = categoryId;
@@ -54,6 +59,8 @@ public class MessageDto {
     this.username = username;
     this.avatar = avatar;
     this.message = message;
+    this.attachmentType = attachmentType;
+    this.attachment = attachment;
     this.createTime = createTime;
     this.updateTime = updateTime;
   }
