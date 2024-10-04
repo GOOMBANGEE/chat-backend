@@ -525,12 +525,12 @@ public class ServerService {
     // 해당 서버 참여자인지 확인
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
-    List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationRepository.fetchServerUserInfoDtoListByUserAndServer(
-        user, server);
+    // 서버에 속해있는 유저 정보
+    List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationRepository
+        .fetchServerUserInfoDtoListByUserAndServer(user, server);
 
     if (serverUserInfoDtoList.isEmpty()) {
       throw new ServerException(SERVER_NOT_PARTICIPATED);

@@ -96,6 +96,19 @@ public class User {
         .build();
   }
 
+  public void updateOnline(LocalDateTime lastLogin) {
+    this.lastLogin = lastLogin;
+    this.online = true;
+  }
+
+  public Long fetchUserIdForLoginAlert() {
+    return this.id;
+  }
+
+  public void updateOffline() {
+    this.online = false;
+  }
+
   // 비밀번호 복구 재설정 userTemp.user -> user.password
   public void recoverPassword(String password) {
     this.password = password;

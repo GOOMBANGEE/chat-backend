@@ -16,11 +16,14 @@ public class ServerUserInfoDto {
 
   private String avatarImageSmall;
 
+  private boolean online;
+
   @QueryProjection
   @Builder
-  public ServerUserInfoDto(Long id, String username, String avatarImageSmall) {
+  public ServerUserInfoDto(Long id, String username, String avatarImageSmall, boolean online) {
     this.id = id;
     this.username = username;
     this.avatarImageSmall = avatarImageSmall;
+    this.online = online;
   }
 }

@@ -271,7 +271,7 @@ public class UserService {
 
       // 유저가 참여중인 서버의 id 리스트
       List<Long> serverIdList = serverUserRelationRepository
-          .fetchServerInfoDtoListByUserAndServerAndLogicDeleteFalse(user);
+          .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
 
       // 3. 인증 정보로 JWT 토큰 생성
       // 4. 토큰 발급
@@ -279,13 +279,28 @@ public class UserService {
       String accessToken = tokenProvider.createToken(
           authentication,
           TokenType.ACCESS_TOKEN,
-          userId,
-          serverIdList);
+          userId);
       String refreshToken = tokenProvider.createToken(
           authentication,
           TokenType.REFRESH_TOKEN,
-          userId,
-          serverIdList);
+          userId);
+
+      // 유저 온라인표시
+      LocalDateTime lastLogin = LocalDateTime.now();
+      user.updateOnline(lastLogin);
+      userRepository.save(user);
+      // 해당 유저가 속한 서버에 온라인메시지발송
+      serverIdList.forEach(
+          serverId -> {
+            String serverUrl = SUB_SERVER + serverId;
+            MessageDto newMessageDto = MessageDto.builder()
+                .messageType(MessageType.USER_ONLINE)
+                .serverId(serverId)
+                .userId(userId)
+                .build();
+            messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+          }
+      );
 
       return JwtTokenDto.builder()
           .accessToken(accessToken)
@@ -296,12 +311,41 @@ public class UserService {
     }
   }
 
+  // refresh -> lastLogin 갱신
+  @Transactional
+  public void refresh(String refreshToken) {
+    Long userIdFromToken = tokenProvider.getUserIdFromToken(refreshToken);
+    User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    LocalDateTime lastLogin = LocalDateTime.now();
+    user.updateOnline(lastLogin);
+    userRepository.save(user);
+  }
+
   // 사용자정보 fetch
   public ProfileResponseDto profile() {
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    return user.buildProfileResponseDto();
+
+    // user 접속중으로 업데이트
+    LocalDateTime now = LocalDateTime.now();
+    user.updateOnline(now);
+    userRepository.save(user);
+
+    // user가 속해있는 서버에 접속알림
+    Long userId = user.fetchUserIdForLoginAlert();
+    List<Long> serverIdList = serverUserRelationRepository
+        .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
+    serverIdList.forEach(serverId -> CompletableFuture.runAsync(() -> {
+      String serverUrl = SUB_SERVER + serverId;
+      MessageDto messageDto = MessageDto.builder()
+          .messageType(MessageType.USER_ONLINE)
+          .serverId(serverId)
+          .userId(userId)
+          .build();
+      messagingTemplate.convertAndSend(serverUrl, messageDto);
+    }));
 
     return user.buildProfileResponseDto(imagePathAvatar);
   }

@@ -64,6 +64,7 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .fetch();
   }
 
+  // 서버에 속해있는 유저의 정보
   @Override
   public List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(
       User user, Server server) {
