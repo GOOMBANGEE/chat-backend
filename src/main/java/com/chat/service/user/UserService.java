@@ -55,7 +55,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.imageio.ImageIO;
@@ -501,23 +500,6 @@ public class UserService {
           .toFile(new File(filePathLarge));
     } catch (IOException e) {
       throw new UserException(IMAGE_SAVE_ERROR);
-    }
-
-    // 기존 이미지 삭제
-    Map<String, String> avatarPathMap = user.fetchAvatarPathMapForDeleteChangeAvatar();
-    if (avatarPathMap != null) {
-      try {
-        String small = avatarPathMap.get("small");
-        String large = avatarPathMap.get("large");
-        if (small != null) {
-          Files.deleteIfExists(Paths.get(small));
-        }
-        if (large != null) {
-          Files.deleteIfExists(Paths.get(large));
-        }
-      } catch (IOException e) {
-        throw new UserException(IMAGE_DELETE_ERROR);
-      }
     }
 
     // 새로운 이미지 경로 저장
