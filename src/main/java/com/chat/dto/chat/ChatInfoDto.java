@@ -19,6 +19,10 @@ public class ChatInfoDto {
 
   private String message;
 
+  private String attachmentType;
+
+  private String attachment;
+
   private boolean enter;
 
   private LocalDateTime createTime;
@@ -27,12 +31,18 @@ public class ChatInfoDto {
 
   @QueryProjection
   @Builder
-  public ChatInfoDto(Long id, String username, String avatarImageSmall, String message,
-      boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
+  public ChatInfoDto(
+      Long id,
+      String username, String avatarImageSmall,
+      String message, String attachmentType, String attachment,
+      boolean enter,
+      LocalDateTime createTime, LocalDateTime updateTime) {
     this.id = id;
     this.username = username;
     this.avatarImageSmall = avatarImageSmall;
     this.message = message;
+    this.attachmentType = attachmentType;
+    this.attachment = attachment;
     this.enter = enter;
     this.createTime = createTime;
     this.updateTime = updateTime;

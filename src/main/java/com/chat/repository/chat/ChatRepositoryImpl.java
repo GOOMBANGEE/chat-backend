@@ -31,6 +31,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -61,6 +63,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -84,6 +88,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -102,6 +108,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -127,6 +135,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -145,6 +155,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -169,6 +181,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -187,6 +201,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -211,6 +227,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
@@ -229,6 +247,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
             qChat.user.username,
             qChat.user.avatarImageSmall,
             qChat.message,
+            qChat.attachmentType,
+            qChat.attachment,
             qChat.enter,
             qChat.createTime,
             qChat.updateTime))
