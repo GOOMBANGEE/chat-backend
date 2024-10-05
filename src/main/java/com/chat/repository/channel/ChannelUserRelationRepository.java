@@ -17,4 +17,6 @@ public interface ChannelUserRelationRepository extends JpaRepository<ChannelUser
   List<ChannelUserRelation> findByChannel(Channel channel);
 
   Optional<ChannelUserRelation> findByChannelIdAndUser(Long channelId, User user);
+
+  List<ChannelUserRelation> findByChannelAndUserIn(Channel channel, List<User> userList);
 }

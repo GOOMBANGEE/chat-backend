@@ -2,7 +2,7 @@ package com.chat.repository.chat;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
-import com.chat.domain.QChat;
+import com.chat.domain.chat.QChat;
 import com.chat.domain.server.QServer;
 import com.chat.dto.chat.ChatInfoDto;
 import com.chat.dto.chat.QChatInfoDto;

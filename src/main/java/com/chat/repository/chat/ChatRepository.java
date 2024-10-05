@@ -1,7 +1,7 @@
 package com.chat.repository.chat;
 
-import com.chat.domain.Chat;
 import com.chat.domain.channel.Channel;
+import com.chat.domain.chat.Chat;
 import com.chat.domain.user.User;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

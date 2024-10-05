@@ -1,4 +1,4 @@
-package com.chat.domain;
+package com.chat.domain.chat;
 
 import com.chat.domain.channel.Channel;
 import com.chat.domain.server.Server;
@@ -25,43 +25,37 @@ public class Chat {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private String message;
-
-  private String attachmentType;
-
-  private String attachment;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private Server server;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private Channel channel;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private User user;
 
-  private boolean logicDelete;
-
+  private String message;
+  private String attachmentType;
+  private String attachment;
+  private boolean logicDelete = false;
   private boolean enter;
 
   private LocalDateTime createTime;
-
   private LocalDateTime updateTime;
 
   @Builder
-  public Chat(String message, String attachmentType, String attachment, Server server,
-      Channel channel, User user,
-      boolean logicDelete, boolean enter, LocalDateTime createTime, LocalDateTime updateTime) {
-    this.message = message;
-    this.attachmentType = attachmentType;
-    this.attachment = attachment;
+  public Chat(
+      Server server, Channel channel, User user,
+      String message, String attachmentType, String attachment,
+      boolean enter,
+      LocalDateTime createTime, LocalDateTime updateTime) {
     this.server = server;
     this.channel = channel;
     this.user = user;
-    this.logicDelete = logicDelete;
+    this.message = message;
+    this.attachmentType = attachmentType;
+    this.attachment = attachment;
     this.enter = enter;
     this.createTime = createTime;
     this.updateTime = updateTime;

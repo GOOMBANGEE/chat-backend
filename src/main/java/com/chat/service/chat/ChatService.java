@@ -3,10 +3,11 @@ package com.chat.service.chat;
 
 import static org.apache.logging.log4j.util.Strings.isEmpty;
 
-import com.chat.domain.Chat;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
+import com.chat.domain.chat.Chat;
 import com.chat.domain.server.Server;
+import com.chat.domain.user.Notification;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
@@ -23,6 +24,7 @@ import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
+import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.chat.util.UUIDGenerator;
@@ -32,11 +34,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +67,7 @@ public class ChatService {
   private final ChannelRepository channelRepository;
   private final ChatRepository chatRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final NotificationRepository notificationRepository;
   private final UUIDGenerator uuidGenerator;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
@@ -109,8 +115,8 @@ public class ChatService {
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
     Channel channel = channelRepository.findByIdAndLogicDeleteFalseAndServerId(channelId, serverId)
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
-    ChannelUserRelation channelUserRelation = channelUserRelationRepository.findByChannelAndUser(
-            channel, user)
+    ChannelUserRelation channelUserRelation = channelUserRelationRepository
+        .findByChannelAndUser(channel, user)
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_PARTICIPATED));
 
     // attachment logic
@@ -150,18 +156,57 @@ public class ChatService {
     LocalDateTime createTime = LocalDateTime.now();
     // 메세지 저장
     Chat chat = Chat.builder()
-        .message(message)
-        .attachmentType(mimeType)
-        .attachment(filePath)
         .server(server)
         .channel(channel)
         .user(user)
-        .logicDelete(false)
+        .message(message)
+        .attachmentType(mimeType)
+        .attachment(filePath)
         .createTime(createTime)
         .updateTime(createTime)
         .build();
     chatRepository.save(chat);
 
+    // mention logic
+    List<Long> mentionedUserIdList = new ArrayList<>();
+    // message 안에서 <@userId> 부분 모두 찾기
+    String regex = "<@(\\d+)>";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(message);
+
+    // 매칭되는 모든 userId 추출
+    while (matcher.find()) {
+      // matcher.group(1)은 숫자만 반환하므로 Long으로 변환하여 리스트에 추가
+      Long userId = Long.parseLong(matcher.group(1));
+      mentionedUserIdList.add(userId);
+    }
+
+    // 멘션받는 대상이 채널에 속해있는지 확인
+    if (!mentionedUserIdList.isEmpty()) {
+      List<User> mentionedUserList = userRepository.findByIdInAndLogicDeleteFalse(
+          mentionedUserIdList);
+      List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+          .findByChannelAndUserIn(channel, mentionedUserList);
+      if (channelUserRelationList.size() != mentionedUserList.size()) {
+        throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
+      }
+
+      // mention notification
+      List<Notification> notificationList = new ArrayList<>();
+      mentionedUserList.forEach(mentionedUser -> {
+        Notification notification = Notification.builder()
+            .server(server)
+            .channel(channel)
+            .chat(chat)
+            .user(user)
+            .mentionedUser(mentionedUser)
+            .read(false)
+            .build();
+        notificationList.add(notification);
+      });
+      notificationRepository.saveAll(notificationList);
+    }
+    
     // record server, channel lastMessage
     Long chatId = chat.fetchChatIdForUpdateLastMessage();
     channel.updateLastMessageId(chatId);

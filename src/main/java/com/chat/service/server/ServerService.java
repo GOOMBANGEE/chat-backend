@@ -1,9 +1,9 @@
 package com.chat.service.server;
 
-import com.chat.domain.Chat;
 import com.chat.domain.category.Category;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
+import com.chat.domain.chat.Chat;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
@@ -155,7 +155,6 @@ public class ServerService {
         .server(server)
         .channel(channel)
         .user(user)
-        .logicDelete(false)
         .enter(true)
         .createTime(createTime)
         .build();
@@ -335,7 +334,6 @@ public class ServerService {
         .server(server)
         .channel(channel)
         .user(user)
-        .logicDelete(false)
         .enter(true)
         .createTime(createTime)
         .build();
