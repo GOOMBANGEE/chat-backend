@@ -13,6 +13,7 @@ import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.chat.ChatInfoDto;
 import com.chat.dto.chat.ChatListResponseDto;
+import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
 import com.chat.dto.chat.ChatSearchRequestDto;
 import com.chat.dto.chat.ChatSearchResponseDto;
 import com.chat.dto.chat.SendMessageResponseDto;
@@ -165,7 +166,6 @@ public class ChatService {
         .createTime(createTime)
         .updateTime(createTime)
         .build();
-    chatRepository.save(chat);
 
     // mention logic
     List<Long> mentionedUserIdList = new ArrayList<>();
@@ -200,13 +200,44 @@ public class ChatService {
             .chat(chat)
             .user(user)
             .mentionedUser(mentionedUser)
-            .read(false)
             .build();
         notificationList.add(notification);
       });
       notificationRepository.saveAll(notificationList);
     }
-    
+
+    // reply
+    Long chatReferenceId = messageDto.getChatReference();
+    ChatInfoDto chatRefInfoDto = null;
+    if (chatReferenceId != null) {
+      ChatReferenceInfoForSendMessageResponse chatReferenceInfo = chatRepository
+          .fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(chatReferenceId, channel);
+
+      User mentionedUser = chatReferenceInfo.getUser();
+      if (messageDto.isChatReferenceNotification()) {
+        Notification notification = Notification.builder()
+            .server(server)
+            .channel(channel)
+            .chat(chat)
+            .user(user)
+            .mentionedUser(mentionedUser)
+            .build();
+        notificationRepository.save(notification);
+      }
+
+      Chat chatReference = chatReferenceInfo.getChat();
+      chat.updateChatReference(chatReference);
+      chatRefInfoDto = ChatInfoDto.builder()
+          .id(chatReferenceInfo.getId())
+          .username(chatReferenceInfo.getUsername())
+          .avatarImageSmall(chatReferenceInfo.getAvatarImageSmall())
+          .message(chatReferenceInfo.getMessage())
+          .attachmentType(chatReferenceInfo.getAttachmentType())
+          .build();
+    }
+
+    chatRepository.save(chat);
+
     // record server, channel lastMessage
     Long chatId = chat.fetchChatIdForUpdateLastMessage();
     channel.updateLastMessageId(chatId);
@@ -217,7 +248,14 @@ public class ChatService {
     // stomp pub
     String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
     String avatar = user.fetchAvatarForSendMessageResponse();
-    MessageDto newMessageDto = chat.buildMessageDtoForSendMessageResponse(messageDto, avatar);
+    MessageDto newMessageDto;
+    if (chatReferenceId != null) {
+      newMessageDto = chat
+          .buildMessageDtoForSendMessageResponse(messageDto, avatar, chatRefInfoDto);
+    } else {
+      newMessageDto = chat
+          .buildMessageDtoForSendMessageResponse(messageDto, avatar, null);
+    }
     TransactionSynchronizationManager.registerSynchronization(
         new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
     );

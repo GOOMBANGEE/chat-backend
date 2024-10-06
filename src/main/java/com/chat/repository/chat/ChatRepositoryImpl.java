@@ -2,10 +2,14 @@ package com.chat.repository.chat;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
+import com.chat.domain.channel.Channel;
 import com.chat.domain.chat.QChat;
 import com.chat.domain.server.QServer;
+import com.chat.domain.user.QUser;
 import com.chat.dto.chat.ChatInfoDto;
+import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
 import com.chat.dto.chat.QChatInfoDto;
+import com.chat.dto.chat.QChatReferenceInfoForSendMessageResponse;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -22,22 +26,37 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
 
   QServer qServer = QServer.server;
   QChat qChat = QChat.chat;
+  QChat qChatReference = new QChat("qChatReference");
+  QUser qUser = QUser.user;
+
+  private QChatInfoDto chatInfoDtoProjection() {
+    return new QChatInfoDto(
+        qChat.id,
+        qChat.user.username,
+        qChat.user.avatarImageSmall,
+        qChat.message,
+        qChat.attachmentType,
+        qChat.attachment,
+        qChat.enter,
+        qChat.createTime,
+        qChat.updateTime,
+        qChatReference.id,
+        qChatReference.user.username,
+        qChatReference.user.avatarImageSmall,
+        qChatReference.message,
+        qChatReference.attachmentType
+    );
+  }
+
 
   @Override
   public List<ChatInfoDto> fetchChatInfoDtoListByChannelId(Long channelId) {
     return queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(channelIdEq(channelId), chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .orderBy(qChat.id.desc())
         .limit(50)
         .fetch();
@@ -58,16 +77,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   @Override
   public List<ChatInfoDto> fetchChatInfoDtoListByChannelIdAndChatId(Long channelId, Long chatId) {
     return queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(channelIdEq(channelId), chatDeleteFalse(), chatIdLt(chatId))
         .orderBy(qChat.id.desc())
@@ -83,16 +93,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   public Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListDefaultOption(keyword),
@@ -103,16 +104,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .fetch();
 
     JPAQuery<ChatInfoDto> countQuery = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListDefaultOption(keyword),
@@ -130,16 +122,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   public Page<ChatInfoDto> searchChatInfoDtoListByUsername(Long serverId, String username,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListByUsernameOption(username),
@@ -150,16 +133,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .fetch();
 
     JPAQuery<ChatInfoDto> countQuery = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListDefaultOption(username),
@@ -176,16 +150,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   public Page<ChatInfoDto> searchChatInfoDtoListByMessage(Long serverId, String message,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListByMessageOption(message),
@@ -196,16 +161,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .fetch();
 
     JPAQuery<ChatInfoDto> countQuery = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListDefaultOption(message),
@@ -222,16 +178,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   public Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Long serverId, String username,
       String message, Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListByUsernameAndMessageOption(username, message),
@@ -242,16 +189,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .fetch();
 
     JPAQuery<ChatInfoDto> countQuery = queryFactory
-        .select(new QChatInfoDto(
-            qChat.id,
-            qChat.user.username,
-            qChat.user.avatarImageSmall,
-            qChat.message,
-            qChat.attachmentType,
-            qChat.attachment,
-            qChat.enter,
-            qChat.createTime,
-            qChat.updateTime))
+        .select(chatInfoDtoProjection())
         .from(qChat)
         .where(serverIdEq(serverId),
             searchChatInfoDtoListDefaultOption(username),
@@ -264,5 +202,30 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
       String message) {
     return qChat.user.username.like("%" + username + "%")
         .and(qChat.message.like("%" + message + "%"));
+  }
+
+  @Override
+  public ChatReferenceInfoForSendMessageResponse fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(
+      Long chatId, Channel channel) {
+    return queryFactory
+        .select(new QChatReferenceInfoForSendMessageResponse(
+            qChat,
+            qChat.user,
+            qChat.id,
+            qChat.user.username,
+            qChat.user.avatarImageSmall,
+            qChat.message,
+            qChat.attachmentType))
+        .from(qChat)
+        .where(chatIdEq(chatId), channelEq(channel), chatDeleteFalse())
+        .fetchFirst();
+  }
+
+  private BooleanExpression chatIdEq(Long chatId) {
+    return qChat.id.eq(chatId);
+  }
+
+  private BooleanExpression channelEq(Channel channel) {
+    return isEmpty(channel) ? null : qChat.channel.eq(channel);
   }
 }

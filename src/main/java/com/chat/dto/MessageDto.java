@@ -1,5 +1,6 @@
 package com.chat.dto;
 
+import com.chat.dto.chat.ChatInfoDto;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,34 +23,33 @@ public class MessageDto {
   private MessageType messageType;
 
   private Long serverId;
-
   private Long categoryId;
-
   private Long channelId;
-
   private Long chatId;
 
   private Long userId;
-
   private String username;
-
   private String avatar;
 
   private String message;
-
   private String attachmentType;
-
   private String attachment;
 
-  private LocalDateTime createTime;
+  // 답장 들어올때
+  private Long chatReference;
+  private boolean chatReferenceNotification;
+  // 답장 내보낼때
+  private ChatInfoDto chatReferenceInfo;
 
+  private LocalDateTime createTime;
   private LocalDateTime updateTime;
 
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long categoryId, Long channelId,
       Long chatId, Long userId, String username, String avatar, String message,
-      String attachmentType, String attachment, LocalDateTime createTime,
-      LocalDateTime updateTime) {
+      String attachmentType,
+      String attachment, Long chatReference, boolean chatReferenceNotification,
+      ChatInfoDto chatReferenceInfo, LocalDateTime createTime, LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
     this.categoryId = categoryId;
@@ -61,6 +61,9 @@ public class MessageDto {
     this.message = message;
     this.attachmentType = attachmentType;
     this.attachment = attachment;
+    this.chatReference = chatReference;
+    this.chatReferenceNotification = chatReferenceNotification;
+    this.chatReferenceInfo = chatReferenceInfo;
     this.createTime = createTime;
     this.updateTime = updateTime;
   }

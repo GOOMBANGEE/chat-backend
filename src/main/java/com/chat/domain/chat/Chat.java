@@ -5,6 +5,7 @@ import com.chat.domain.server.Server;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
+import com.chat.dto.chat.ChatInfoDto;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -44,6 +45,10 @@ public class Chat {
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn
+  private Chat chatReference;
+
   @Builder
   public Chat(
       Server server, Channel channel, User user,
@@ -69,7 +74,8 @@ public class Chat {
     return this.id;
   }
 
-  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto, String avatar) {
+  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto, String avatar,
+      ChatInfoDto chatRefInfoDto) {
     return MessageDto.builder()
         .messageType(messageDto.getMessageType())
         .serverId(messageDto.getServerId())
@@ -80,8 +86,13 @@ public class Chat {
         .message(this.message)
         .attachmentType(this.attachmentType)
         .attachment(this.attachment)
+        .chatReferenceInfo(chatRefInfoDto)
         .createTime(this.createTime)
         .build();
+  }
+
+  public void updateChatReference(Chat chatReference) {
+    this.chatReference = chatReference;
   }
 
   public void updateMessage(MessageDto messageDto, LocalDateTime updateTime) {
