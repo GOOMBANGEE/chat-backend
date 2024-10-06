@@ -38,16 +38,16 @@ public class Notification {
   @JoinColumn
   private User mentionedUser;
 
-  private boolean read;
+  private boolean isRead = false;
 
   @Builder
   public Notification(Server server, Channel channel, Chat chat, User user, User mentionedUser,
-      boolean read) {
+      boolean isRead) {
     this.server = server;
     this.channel = channel;
     this.chat = chat;
     this.user = user;
     this.mentionedUser = mentionedUser;
-    this.read = read;
+    this.isRead = isRead;
   }
 }
