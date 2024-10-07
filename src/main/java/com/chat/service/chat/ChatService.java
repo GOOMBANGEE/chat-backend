@@ -11,6 +11,7 @@ import com.chat.domain.user.Notification;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
+import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.chat.ChatInfoDto;
 import com.chat.dto.chat.ChatListResponseDto;
 import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
@@ -109,28 +110,103 @@ public class ChatService {
     Long channelId = messageDto.getChannelId();
     String message = messageDto.getMessage();
 
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
-        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
-    Channel channel = channelRepository.findByIdAndLogicDeleteFalseAndServerId(channelId, serverId)
-        .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
-    ChannelUserRelation channelUserRelation = channelUserRelationRepository
-        .findByChannelAndUser(channel, user)
-        .orElseThrow(() -> new ChannelException(CHANNEL_NOT_PARTICIPATED));
+    // validChannelUserRelation
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = this.validChannelUserRelation
+        (serverId, channelId, email);
+    Server server = serverId != null ? channelUserRelationInfoDto.getServer() : null;
+    Channel channel = channelUserRelationInfoDto.getChannel();
+    ChannelUserRelation channelUserRelation = channelUserRelationInfoDto.getChannelUserRelation();
+    User user = channelUserRelationInfoDto.getUser();
 
     // attachment logic
+    Map<String, String> attachmentLogicResult = attachmentLogic(messageDto);
+    String mimeType = attachmentLogicResult.get("mimeType");
+    String filePath = attachmentLogicResult.get("filePath");
+
+    LocalDateTime createTime = LocalDateTime.now();
+    // 메세지 저장
+    Chat chat = Chat.builder()
+        .server(server)
+        .channel(channel)
+        .user(user)
+        .message(message)
+        .attachmentType(mimeType)
+        .attachment(filePath)
+        .createTime(createTime)
+        .updateTime(createTime)
+        .build();
+
+    // mention logic
+    mentionLogic(server, channel, chat, user, message);
+
+    // reply logic
+    ChatInfoDto chatReferenceInfoDto = replyLogic(server, channel, chat, user, messageDto);
+    chatRepository.save(chat);
+
+    // record server, channel lastMessage
+    Long chatId = chat.fetchChatIdForUpdateLastMessage();
+    channel.updateLastMessageId(chatId);
+    channelUserRelation.updateLastReadMessageId(chatId);
+    channelRepository.save(channel);
+    channelUserRelationRepository.save(channelUserRelation);
+
+    // stomp pub
+    String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
+    String avatar = user.fetchAvatarForSendMessageResponse();
+    MessageDto newMessageDto;
+    newMessageDto = chat
+        .buildMessageDtoForSendMessageResponse
+            (messageDto, avatar, chatReferenceInfoDto);
+    TransactionSynchronizationManager.registerSynchronization(
+        new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
+    );
+
+    // return
+    Long id = chat.fetchChatIdForSendMessageResponse();
+    return SendMessageResponseDto.builder()
+        .serverId(serverId)
+        .channelId(channelId)
+        .id(id)
+        .createTime(createTime)
+        .avatar(avatar)
+        .build();
+  }
+
+  private ChannelUserRelationInfoDto validChannelUserRelation(Long serverId, Long channelId,
+      String email) {
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationRepository
+        .fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail
+            (serverId, channelId, email);
+    User user = channelUserRelationInfoDto.getUser();
+    Server server = serverId != null ? channelUserRelationInfoDto.getServer() : null;
+    Channel channel = channelUserRelationInfoDto.getChannel();
+    ChannelUserRelation channelUserRelation = channelUserRelationInfoDto.getChannelUserRelation();
+    if (serverId != null && server == null) {
+      throw new ServerException(SERVER_NOT_FOUND);
+    }
+    if (channel == null) {
+      throw new ChannelException(CHANNEL_NOT_FOUND);
+    }
+    if (channelUserRelation == null) {
+      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
+    }
+    if (user == null) {
+      throw new UserException(USER_UNREGISTERED);
+    }
+    return channelUserRelationInfoDto;
+  }
+
+  // attachmentLogic
+  private Map<String, String> attachmentLogic(MessageDto messageDto) throws IOException {
     String attachment = messageDto.getAttachment();
-    String mimeType = null;
-    String filePath = null;
+    Map<String, String> attachmentLogicResult = new HashMap<>();
     if (attachment != null) {
       String[] base64 = attachment.split(",");
       // mimeType -> data:image/jpeg,png,gif,bmp,webp, video/mp4,mpeg,ogg,
       // audio/mpeg,wav,ogg,mp4, text/plain, application/json,pdf,zip
       String metadata = base64[0];
       String base64Data = base64[1];
-      mimeType = metadata.split(":")[1].split(";")[0];  // image/png
+      String mimeType = metadata.split(":")[1].split(";")[0];  // image/png
 
       // 파일 확장자, 폴더 결정
       Map<String, String> attachmentInfo = getFileInfoFromMimeType(mimeType);
@@ -148,127 +224,15 @@ public class ChatService {
       long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
 
       String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
-      filePath = path + fileName;
+      String filePath = path + fileName;
 
       // 파일 저장
       Files.write(Paths.get(filePath), decode);
+
+      attachmentLogicResult.put("mimeType", mimeType);
+      attachmentLogicResult.put("filePath", filePath);
     }
-
-    LocalDateTime createTime = LocalDateTime.now();
-    // 메세지 저장
-    Chat chat = Chat.builder()
-        .server(server)
-        .channel(channel)
-        .user(user)
-        .message(message)
-        .attachmentType(mimeType)
-        .attachment(filePath)
-        .createTime(createTime)
-        .updateTime(createTime)
-        .build();
-
-    // mention logic
-    List<Long> mentionedUserIdList = new ArrayList<>();
-    // message 안에서 <@userId> 부분 모두 찾기
-    String regex = "<@(\\d+)>";
-    Pattern pattern = Pattern.compile(regex);
-    Matcher matcher = pattern.matcher(message);
-
-    // 매칭되는 모든 userId 추출
-    while (matcher.find()) {
-      // matcher.group(1)은 숫자만 반환하므로 Long으로 변환하여 리스트에 추가
-      Long userId = Long.parseLong(matcher.group(1));
-      mentionedUserIdList.add(userId);
-    }
-
-    // 멘션받는 대상이 채널에 속해있는지 확인
-    if (!mentionedUserIdList.isEmpty()) {
-      List<User> mentionedUserList = userRepository.findByIdInAndLogicDeleteFalse(
-          mentionedUserIdList);
-      List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
-          .findByChannelAndUserIn(channel, mentionedUserList);
-      if (channelUserRelationList.size() != mentionedUserList.size()) {
-        throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-      }
-
-      // mention notification
-      List<Notification> notificationList = new ArrayList<>();
-      mentionedUserList.forEach(mentionedUser -> {
-        Notification notification = Notification.builder()
-            .server(server)
-            .channel(channel)
-            .chat(chat)
-            .user(user)
-            .mentionedUser(mentionedUser)
-            .build();
-        notificationList.add(notification);
-      });
-      notificationRepository.saveAll(notificationList);
-    }
-
-    // reply
-    Long chatReferenceId = messageDto.getChatReference();
-    ChatInfoDto chatRefInfoDto = null;
-    if (chatReferenceId != null) {
-      ChatReferenceInfoForSendMessageResponse chatReferenceInfo = chatRepository
-          .fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(chatReferenceId, channel);
-
-      User mentionedUser = chatReferenceInfo.getUser();
-      if (messageDto.isChatReferenceNotification()) {
-        Notification notification = Notification.builder()
-            .server(server)
-            .channel(channel)
-            .chat(chat)
-            .user(user)
-            .mentionedUser(mentionedUser)
-            .build();
-        notificationRepository.save(notification);
-      }
-
-      Chat chatReference = chatReferenceInfo.getChat();
-      chat.updateChatReference(chatReference);
-      chatRefInfoDto = ChatInfoDto.builder()
-          .id(chatReferenceInfo.getId())
-          .username(chatReferenceInfo.getUsername())
-          .avatarImageSmall(chatReferenceInfo.getAvatarImageSmall())
-          .message(chatReferenceInfo.getMessage())
-          .attachmentType(chatReferenceInfo.getAttachmentType())
-          .build();
-    }
-
-    chatRepository.save(chat);
-
-    // record server, channel lastMessage
-    Long chatId = chat.fetchChatIdForUpdateLastMessage();
-    channel.updateLastMessageId(chatId);
-    channelUserRelation.updateLastReadMessageId(chatId);
-    channelRepository.save(channel);
-    channelUserRelationRepository.save(channelUserRelation);
-
-    // stomp pub
-    String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
-    String avatar = user.fetchAvatarForSendMessageResponse();
-    MessageDto newMessageDto;
-    if (chatReferenceId != null) {
-      newMessageDto = chat
-          .buildMessageDtoForSendMessageResponse(messageDto, avatar, chatRefInfoDto);
-    } else {
-      newMessageDto = chat
-          .buildMessageDtoForSendMessageResponse(messageDto, avatar, null);
-    }
-    TransactionSynchronizationManager.registerSynchronization(
-        new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
-    );
-
-    // return
-    Long id = chat.fetchChatIdForSendMessageResponse();
-    return SendMessageResponseDto.builder()
-        .serverId(serverId)
-        .channelId(channelId)
-        .id(id)
-        .createTime(createTime)
-        .avatar(avatar)
-        .build();
+    return attachmentLogicResult;
   }
 
   private Map<String, String> getFileInfoFromMimeType(String mimeType) {
@@ -306,24 +270,91 @@ public class ChatService {
     return attachmentInfo;
   }
 
+  private void mentionLogic(Server server, Channel channel, Chat chat, User user, String message) {
+    List<Long> mentionedUserIdList = new ArrayList<>();
+    // message 안에서 <@userId> 부분 모두 찾기
+    String regex = "<@(\\d+)>";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(message);
+
+    // 매칭되는 모든 userId 추출
+    while (matcher.find()) {
+      // matcher.group(1)은 숫자만 반환하므로 Long으로 변환하여 리스트에 추가
+      Long userId = Long.parseLong(matcher.group(1));
+      mentionedUserIdList.add(userId);
+    }
+
+    // 멘션받는 대상이 채널에 속해있는지 확인
+    if (!mentionedUserIdList.isEmpty()) {
+      List<User> mentionedUserList = userRepository.findByIdInAndLogicDeleteFalse(
+          mentionedUserIdList);
+      List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+          .findByChannelAndUserIn(channel, mentionedUserList);
+      if (channelUserRelationList.size() != mentionedUserList.size()) {
+        throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
+      }
+
+      // mention notification
+      List<Notification> notificationList = new ArrayList<>();
+      mentionedUserList.forEach(mentionedUser -> {
+        Notification notification = Notification.builder()
+            .server(server)
+            .channel(channel)
+            .chat(chat)
+            .user(user)
+            .mentionedUser(mentionedUser)
+            .build();
+        notificationList.add(notification);
+      });
+      notificationRepository.saveAll(notificationList);
+    }
+  }
+
+  // reply logic
+  private ChatInfoDto replyLogic(Server server, Channel channel, Chat chat, User user,
+      MessageDto messageDto) {
+    Long chatReferenceId = messageDto.getChatReference();
+    ChatInfoDto chatReferenceInfoDto = null;
+    if (chatReferenceId != null) {
+      ChatReferenceInfoForSendMessageResponse chatReferenceInfo = chatRepository
+          .fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(chatReferenceId, channel);
+
+      User mentionedUser = chatReferenceInfo.getUser();
+      if (messageDto.isChatReferenceNotification()) {
+        Notification notification = Notification.builder()
+            .server(server)
+            .channel(channel)
+            .chat(chat)
+            .user(user)
+            .mentionedUser(mentionedUser)
+            .build();
+        notificationRepository.save(notification);
+      }
+
+      Chat chatReference = chatReferenceInfo.getChat();
+      chat.updateChatReference(chatReference);
+      chatReferenceInfoDto = ChatInfoDto.builder()
+          .id(chatReferenceInfo.getId())
+          .username(chatReferenceInfo.getUsername())
+          .avatarImageSmall(chatReferenceInfo.getAvatarImageSmall())
+          .message(chatReferenceInfo.getMessage())
+          .attachmentType(chatReferenceInfo.getAttachmentType())
+          .build();
+    }
+    return chatReferenceInfoDto;
+  }
+
   @Transactional
   public void updateMessage(MessageDto messageDto) {
     Long serverId = messageDto.getServerId();
     Long channelId = messageDto.getChannelId();
     Long chatId = messageDto.getChatId();
     String message = messageDto.getMessage();
-
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
-      throw new ServerException(SERVER_NOT_FOUND);
-    }
-    if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
-      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-    }
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = validChannelUserRelation
+        (serverId, channelId, email);
+    User user = channelUserRelationInfoDto.getUser();
 
     Chat chat = chatRepository.findByIdAndUserAndLogicDeleteFalse(chatId, user)
         .orElseThrow(() -> new ChatException(CHAT_NOT_FOUND));
@@ -349,15 +380,7 @@ public class ChatService {
   public ChatListResponseDto chatList(Long serverId, Long channelId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
-      throw new ServerException(SERVER_NOT_FOUND);
-    }
-    if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
-      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-    }
+    validChannelUserRelation(serverId, channelId, email);
 
     // 최근 50개 fetch
     List<ChatInfoDto> chatInfoDtoList = chatRepository.fetchChatInfoDtoListByChannelId(channelId);
@@ -370,15 +393,7 @@ public class ChatService {
   public ChatListResponseDto chatListPrevious(Long serverId, Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
-      throw new ServerException(SERVER_NOT_FOUND);
-    }
-    if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
-      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-    }
+    validChannelUserRelation(serverId, channelId, email);
 
     // 주어진 chatId의 앞50개 fetch
     List<ChatInfoDto> chatInfoDtoList = chatRepository
@@ -393,15 +408,9 @@ public class ChatService {
   public void delete(Long serverId, Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
-      throw new ServerException(SERVER_NOT_FOUND);
-    }
-    if (channelUserRelationRepository.findByChannelIdAndUser(channelId, user).isEmpty()) {
-      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-    }
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = validChannelUserRelation
+        (serverId, channelId, email);
+    User user = channelUserRelationInfoDto.getUser();
 
     Chat chat = chatRepository.findByIdAndUserAndLogicDeleteFalse(chatId, user)
         .orElseThrow(() -> new ChatException(CHAT_NOT_FOUND));

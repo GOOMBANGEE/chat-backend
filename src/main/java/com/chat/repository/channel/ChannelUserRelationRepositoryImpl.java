@@ -8,7 +8,9 @@ import com.chat.domain.channel.QChannelUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
+import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.channel.QChannelInfoDto;
+import com.chat.dto.channel.QChannelUserRelationInfoDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
@@ -19,6 +21,36 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private final JPAQueryFactory queryFactory;
   QChannelUserRelation qChannelUserRelation = QChannelUserRelation.channelUserRelation;
+
+  @Override
+  public ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
+      Long serverId, Long channelId, String email) {
+    return queryFactory
+        .select(new QChannelUserRelationInfoDto(
+            serverId != null ? qChannelUserRelation.channel.server : null,
+            qChannelUserRelation.channel,
+            qChannelUserRelation,
+            qChannelUserRelation.user
+        ))
+        .from(qChannelUserRelation)
+        .where(
+            serverId != null ? serverIdEq(serverId) : null,
+            channelIdEq(channelId),
+            userEmailEq(email))
+        .fetchOne();
+  }
+
+  private BooleanExpression serverIdEq(Long serverId) {
+    return qChannelUserRelation.channel.server.id.eq(serverId);
+  }
+
+  private BooleanExpression channelIdEq(Long channelId) {
+    return qChannelUserRelation.channel.id.eq(channelId);
+  }
+
+  private BooleanExpression userEmailEq(String email) {
+    return qChannelUserRelation.user.email.eq(email);
+  }
 
   @Override
   public List<ChannelInfoDto> fetchChannelInfoDtoListByUser(User user) {

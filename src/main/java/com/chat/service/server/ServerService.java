@@ -1,6 +1,7 @@
 package com.chat.service.server;
 
 import com.chat.domain.category.Category;
+import com.chat.domain.category.CategoryUserRelation;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.chat.Chat;
@@ -123,6 +124,15 @@ public class ServerService {
         .server(server)
         .build();
     categoryRepository.save(category);
+
+    CategoryUserRelation categoryUserRelation = CategoryUserRelation.builder()
+        .category(category)
+        .user(user)
+        .readMessage(true)
+        .writeMessage(true)
+        .viewHistory(true)
+        .build();
+    categoryUserRelationRepository.save(categoryUserRelation);
 
     // 기본채널 생성
     Channel channel = Channel.builder()
