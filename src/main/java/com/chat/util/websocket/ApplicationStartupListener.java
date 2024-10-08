@@ -33,7 +33,7 @@ public class ApplicationStartupListener {
       String serverUrl = SUB_SERVER + serverId;
 
       Long channelId = dto.getChannelId();
-      String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
+      String channelUrl = SUB_CHANNEL + channelId;
 
       messagingTemplate.convertAndSend(serverUrl, "dummy message");
       messagingTemplate.convertAndSend(channelUrl, "dummy message");

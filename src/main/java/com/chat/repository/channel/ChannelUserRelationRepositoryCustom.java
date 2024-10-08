@@ -7,11 +7,15 @@ import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import java.util.List;
+import java.util.Optional;
 
 public interface ChannelUserRelationRepositoryCustom {
 
   ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
       Long serverId, Long channelId, String email);
+
+  Optional<ChannelUserRelation> fetchChannelUserRelationByChannelIdAndUserId(Long channelId,
+      Long userId);
 
   List<ChannelInfoDto> fetchChannelInfoDtoListByUser(User user);
 

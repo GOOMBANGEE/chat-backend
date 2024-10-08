@@ -5,6 +5,7 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 import com.chat.domain.server.QServer;
 import com.chat.domain.server.QServerUserRelation;
 import com.chat.domain.server.Server;
+import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.QUser;
 import com.chat.domain.user.User;
 import com.chat.dto.server.QServerInfoDto;
@@ -50,6 +51,19 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
 
   private BooleanExpression logicDeleteFalse() {
     return qServerUserRelation.logicDelete.eq(Boolean.FALSE);
+  }
+
+  @Override
+  public Optional<ServerUserRelation> fetchServerUserRelationByServerIdAndUserId(Long serverId,
+      Long userId) {
+    return Optional.ofNullable(queryFactory
+        .selectFrom(qServerUserRelation)
+        .where(serverIdEq(serverId), userIdEq(userId))
+        .fetchOne());
+  }
+
+  private BooleanExpression userIdEq(Long userId) {
+    return qServerUserRelation.user.id.eq(userId);
   }
 
   @Override

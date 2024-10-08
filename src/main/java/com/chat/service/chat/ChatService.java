@@ -151,7 +151,7 @@ public class ChatService {
     channelUserRelationRepository.save(channelUserRelation);
 
     // stomp pub
-    String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
+    String channelUrl = SUB_CHANNEL + channelId;
     String avatar = user.fetchAvatarForSendMessageResponse();
     MessageDto newMessageDto;
     newMessageDto = chat
@@ -377,10 +377,10 @@ public class ChatService {
     messagingTemplate.convertAndSend(channelUrl, newMessageDto);
   }
 
-  public ChatListResponseDto chatList(Long serverId, Long channelId) {
+  public ChatListResponseDto chatList(Long channelId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    validChannelUserRelation(serverId, channelId, email);
+    validChannelUserRelation(null, channelId, email);
 
     // 최근 50개 fetch
     List<ChatInfoDto> chatInfoDtoList = chatRepository.fetchChatInfoDtoListByChannelId(channelId);
@@ -390,10 +390,10 @@ public class ChatService {
         .build();
   }
 
-  public ChatListResponseDto chatListPrevious(Long serverId, Long channelId, Long chatId) {
+  public ChatListResponseDto chatListPrevious(Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    validChannelUserRelation(serverId, channelId, email);
+    validChannelUserRelation(null, channelId, email);
 
     // 주어진 chatId의 앞50개 fetch
     List<ChatInfoDto> chatInfoDtoList = chatRepository
@@ -405,11 +405,11 @@ public class ChatService {
   }
 
   @Transactional
-  public void delete(Long serverId, Long channelId, Long chatId) {
+  public void delete(Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     ChannelUserRelationInfoDto channelUserRelationInfoDto = validChannelUserRelation
-        (serverId, channelId, email);
+        (null, channelId, email);
     User user = channelUserRelationInfoDto.getUser();
 
     Chat chat = chatRepository.findByIdAndUserAndLogicDeleteFalse(chatId, user)
@@ -419,10 +419,9 @@ public class ChatService {
     chatRepository.save(chat);
 
     // stomp pub
-    String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
+    String channelUrl = SUB_CHANNEL + channelId;
     MessageDto newMessageDto = MessageDto.builder()
         .messageType(MessageType.CHAT_DELETE)
-        .serverId(serverId)
         .channelId(channelId)
         .chatId(chatId)
         .build();

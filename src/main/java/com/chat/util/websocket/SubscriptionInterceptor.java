@@ -1,7 +1,6 @@
 package com.chat.util.websocket;
 
 
-import com.chat.domain.user.User;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
@@ -77,7 +76,7 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     if (Objects.requireNonNull(messageType) == SimpMessageType.SUBSCRIBE) {
       // sub/user/{userId}
       // sub/server/{serverId}
-      // sub/channel/{serverId}/{channelId}
+      // sub/channel/{channelId}
       String destination = accessor.getDestination();
       if (destination == null) {
         throw new ServerException(INVALID_PATH);
@@ -129,10 +128,9 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     String accessToken = this.extractAccessToken(accessor);
     Long userIdFromToken = tokenProvider.getUserIdFromToken(accessToken);
 
-    User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
+    if (serverUserRelationRepository
+        .fetchServerUserRelationByServerIdAndUserId(serverId, userIdFromToken)
+        .isEmpty()) {
       throw new ServerException(SERVER_NOT_PARTICIPATED);
     }
   }
@@ -141,22 +139,12 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     // token userId, path channelId를 가져와서 channel에 속해있는지 확인
     String accessToken = this.extractAccessToken(accessor);
     Long userIdFromToken = tokenProvider.getUserIdFromToken(accessToken);
-    Long serverId = extractPathId(destination, 3);
-    Long channelId = extractPathId(destination, 4);
-
-    User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    if (serverRepository.findByIdAndLogicDeleteFalse(serverId)
-        .isEmpty()) {
-      throw new ServerException(INVALID_PATH);
-    }
-    com.chat.domain.channel.Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new ServerException(INVALID_PATH));
+    Long channelId = extractPathId(destination, 3);
 
     // 기존방식 -> 특정유저, 특정역할에 대해서 검색
     // 개선방안 -> ChannelUserRelation에 모든 채널-유저 정보가 담겨있어서 해당 엔티티가 존재하는지 검색
     if (channelUserRelationRepository
-        .findByChannelAndUser(channel, user)
+        .fetchChannelUserRelationByChannelIdAndUserId(channelId, userIdFromToken)
         .isEmpty()) {
       throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
     }

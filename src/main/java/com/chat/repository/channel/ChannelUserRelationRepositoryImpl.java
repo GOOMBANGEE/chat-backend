@@ -14,6 +14,7 @@ import com.chat.dto.channel.QChannelUserRelationInfoDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -27,21 +28,21 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
       Long serverId, Long channelId, String email) {
     return queryFactory
         .select(new QChannelUserRelationInfoDto(
-            serverId != null ? qChannelUserRelation.channel.server : null,
+            qChannelUserRelation.channel.server,
             qChannelUserRelation.channel,
             qChannelUserRelation,
             qChannelUserRelation.user
         ))
         .from(qChannelUserRelation)
         .where(
-            serverId != null ? serverIdEq(serverId) : null,
+            serverIdEq(serverId),
             channelIdEq(channelId),
             userEmailEq(email))
         .fetchOne();
   }
 
   private BooleanExpression serverIdEq(Long serverId) {
-    return qChannelUserRelation.channel.server.id.eq(serverId);
+    return isEmpty(serverId) ? null : qChannelUserRelation.channel.server.id.eq(serverId);
   }
 
   private BooleanExpression channelIdEq(Long channelId) {
@@ -50,6 +51,19 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private BooleanExpression userEmailEq(String email) {
     return qChannelUserRelation.user.email.eq(email);
+  }
+
+  @Override
+  public Optional<ChannelUserRelation> fetchChannelUserRelationByChannelIdAndUserId(Long channelId,
+      Long userId) {
+    return Optional.ofNullable(queryFactory
+        .selectFrom(qChannelUserRelation)
+        .where(channelIdEq(channelId), userIdEq(userId))
+        .fetchOne());
+  }
+
+  private BooleanExpression userIdEq(Long userId) {
+    return qChannelUserRelation.user.id.eq(userId);
   }
 
   @Override

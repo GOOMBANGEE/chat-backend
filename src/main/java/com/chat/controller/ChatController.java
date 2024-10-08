@@ -49,38 +49,29 @@ public class ChatController {
     return ResponseEntity.ok(null);
   }
 
-  @GetMapping("/{serverId}/{channelId}/list")
+  @GetMapping("/{channelId}/list")
   public ResponseEntity<ChatListResponseDto> chatList(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
       @NotNull(message = CHANNEL_INVALID)
       @PathVariable("channelId")
       Long channelId) {
-    ChatListResponseDto responseDto = chatService.chatList(serverId, channelId);
+    ChatListResponseDto responseDto = chatService.chatList(channelId);
     return ResponseEntity.ok(responseDto);
   }
 
-  @GetMapping("/{serverId}/{channelId}/{chatId}/list")
+  @GetMapping("/{channelId}/{chatId}/list")
   public ResponseEntity<ChatListResponseDto> chatListPrevious(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
       @NotNull(message = CHANNEL_INVALID)
       @PathVariable("channelId")
       Long channelId,
       @NotNull(message = CHAT_INVALID)
       @PathVariable("chatId")
       Long chatId) {
-    ChatListResponseDto responseDto = chatService.chatListPrevious(serverId, channelId, chatId);
+    ChatListResponseDto responseDto = chatService.chatListPrevious(channelId, chatId);
     return ResponseEntity.ok(responseDto);
   }
 
-  @DeleteMapping("/{serverId}/{channelId}/{chatId}")
+  @DeleteMapping("/{channelId}/{chatId}")
   public ResponseEntity<EmptyResponseDto> delete(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
       @NotNull(message = CHANNEL_INVALID)
       @PathVariable("channelId")
       Long channelId,
@@ -88,10 +79,11 @@ public class ChatController {
       @PathVariable("chatId")
       Long chatId
   ) {
-    chatService.delete(serverId, channelId, chatId);
+    chatService.delete(channelId, chatId);
     return ResponseEntity.ok(null);
   }
 
+  // todo 수정필요
   @PostMapping("/{serverId}/search")
   public ResponseEntity<ChatSearchResponseDto> search(
       @NotNull(message = SERVER_INVALID)

@@ -1,6 +1,7 @@
 package com.chat.repository.server;
 
 import com.chat.domain.server.Server;
+import com.chat.domain.server.ServerUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.server.ServerInfoDto;
 import com.chat.dto.server.ServerUserInfoDto;
@@ -10,6 +11,9 @@ import java.util.Optional;
 public interface ServerUserRelationRepositoryCustom {
 
   Optional<Server> fetchServerByUserAndServerId(User user, Long serverId);
+
+  Optional<ServerUserRelation> fetchServerUserRelationByServerIdAndUserId(Long serverId,
+      Long userId);
 
   List<ServerInfoDto> fetchServerInfoDtoListByUser(User user);
 

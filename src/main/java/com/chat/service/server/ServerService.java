@@ -186,7 +186,7 @@ public class ServerService {
     List<String> urlList = List.of(
         SUB_USER + userId,
         SUB_SERVER + id,
-        SUB_CHANNEL + id + "/" + channelId
+        SUB_CHANNEL + channelId
     );
     urlList.forEach(url ->
         TransactionSynchronizationManager.registerSynchronization(
@@ -310,6 +310,25 @@ public class ServerService {
     // server에 userCount +1
     server.userJoin();
     serverRepository.save(server);
+
+    // server내의 open카테고리 등록설정
+    List<Category> categoryList = categoryRepository
+        .findByServer(server);
+    List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
+    categoryList.forEach(
+        (category -> {
+          CategoryUserRelation categoryUserRelation = CategoryUserRelation.builder()
+              .category(category)
+              .user(user)
+              .readMessage(true)
+              .writeMessage(true)
+              .viewHistory(true)
+              .build();
+
+          categoryUserRelationList.add(categoryUserRelation);
+        })
+    );
+    categoryUserRelationRepository.saveAll(categoryUserRelationList);
 
     // server내의 open채널 등록설정
     List<ChannelRegistrationDto> channelRegistrationDtoList = channelRepository
