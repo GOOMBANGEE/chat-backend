@@ -69,13 +69,15 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
   @Override
   public List<ChannelInfoDto> fetchChannelInfoDtoListByUser(User user) {
     return queryFactory
-        .select(new QChannelInfoDto(qChannelUserRelation.channel.id,
+        .select(new QChannelInfoDto(
+            qChannelUserRelation.channel.id,
             qChannelUserRelation.channel.name,
             qChannelUserRelation.channel.displayOrder,
             qChannelUserRelation.channel.server.id,
             qChannelUserRelation.channel.category.id,
             qChannelUserRelation.lastReadMessageId,
-            qChannelUserRelation.channel.lastMessageId))
+            qChannelUserRelation.channel.lastMessageId,
+            qChannelUserRelation.userDirectMessage.id))
         .from(qChannelUserRelation)
         .where(userEq(user), logicDeleteFalse())
         .fetch();

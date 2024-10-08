@@ -24,10 +24,12 @@ public class ChannelInfoDto {
 
   private Long lastMessageId;
 
+  private Long userDirectMessageId;
+
   @QueryProjection
   @Builder
   public ChannelInfoDto(Long id, String name, Double displayOrder, Long serverId, Long categoryId,
-      Long lastReadMessageId, Long lastMessageId) {
+      Long lastReadMessageId, Long lastMessageId, Long userDirectMessageId) {
     this.id = id;
     this.name = name;
     this.displayOrder = displayOrder;
@@ -35,5 +37,6 @@ public class ChannelInfoDto {
     this.categoryId = categoryId;
     this.lastReadMessageId = lastReadMessageId;
     this.lastMessageId = lastMessageId;
+    this.userDirectMessageId = userDirectMessageId;
   }
 }

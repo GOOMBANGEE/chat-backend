@@ -81,6 +81,7 @@ public class ChatService {
   private static final String UNSUPPORTED_FILE_TYPE = "CHAT:UNSUPPORTED_FILE_TYPE";
 
   private final SimpMessagingTemplate messagingTemplate;
+  private static final String SUB_USER = "/sub/user/";
   private static final String SUB_CHANNEL = "/sub/channel/";
   private static final String EXTENSION = "extension";
   private static final String PATH = "path";
@@ -104,11 +105,14 @@ public class ChatService {
 
   @Transactional
   public SendMessageResponseDto sendMessage(MessageDto messageDto) throws IOException {
-    String email = customUserDetailsService.getEmailByUserDetails();
-
     Long serverId = messageDto.getServerId();
     Long channelId = messageDto.getChannelId();
     String message = messageDto.getMessage();
+    Long userId = messageDto.getUserId();
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // direct message logic
+    channelId = this.directMessageLogic(channelId, userId, email);
 
     // validChannelUserRelation
     ChannelUserRelationInfoDto channelUserRelationInfoDto = this.validChannelUserRelation
@@ -119,7 +123,7 @@ public class ChatService {
     User user = channelUserRelationInfoDto.getUser();
 
     // attachment logic
-    Map<String, String> attachmentLogicResult = attachmentLogic(messageDto);
+    Map<String, String> attachmentLogicResult = this.attachmentLogic(messageDto);
     String mimeType = attachmentLogicResult.get("mimeType");
     String filePath = attachmentLogicResult.get("filePath");
 
@@ -137,10 +141,10 @@ public class ChatService {
         .build();
 
     // mention logic
-    mentionLogic(server, channel, chat, user, message);
+    this.mentionLogic(server, channel, chat, user, message);
 
     // reply logic
-    ChatInfoDto chatReferenceInfoDto = replyLogic(server, channel, chat, user, messageDto);
+    ChatInfoDto chatReferenceInfoDto = this.replyLogic(server, channel, chat, user, messageDto);
     chatRepository.save(chat);
 
     // record server, channel lastMessage
@@ -170,6 +174,47 @@ public class ChatService {
         .createTime(createTime)
         .avatar(avatar)
         .build();
+  }
+
+  private Long directMessageLogic(Long channelId, Long userId, String email) {
+    // dm 채널이 없는상태 -> 채널생성 후 해당 채널로 메시지 발행
+    if (channelId == null && userId != null) {
+      User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+          .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+      User mentionedUser = userRepository.findByIdAndLogicDeleteFalse(userId)
+          .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+      Channel channel = Channel.builder()
+          .open(true)
+          .build();
+      channelRepository.save(channel);
+      // 보내는유저와 받는유저에 대해서 channelUserRelation 추가
+      List<User> userList = new ArrayList<>();
+      userList.add(user);
+      userList.add(mentionedUser);
+
+      List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
+      userList.forEach(userListUser -> {
+        ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
+            .channel(channel)
+            .user(userListUser)
+            .readMessage(true)
+            .writeMessage(true)
+            .viewHistory(true)
+            .build();
+        channelUserRelationList.add(channelUserRelation);
+      });
+      channelUserRelationRepository.saveAll(channelUserRelationList);
+      channelId = channel.getChannelIdForChannelCreate();
+
+      // dm 받는 유저에게 채널생성알림
+      String userUrl = SUB_USER + userId;
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.DIRECT_MESSAGE)
+          .channelId(channelId)
+          .build();
+      messagingTemplate.convertAndSend(userUrl, newMessageDto);
+    }
+    return channelId;
   }
 
   private ChannelUserRelationInfoDto validChannelUserRelation(Long serverId, Long channelId,
