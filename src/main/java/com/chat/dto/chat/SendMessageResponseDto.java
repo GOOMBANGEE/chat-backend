@@ -20,13 +20,16 @@ public class SendMessageResponseDto {
 
   private String avatar;
 
+  private String attachment;
+
   @Builder
   public SendMessageResponseDto(Long serverId, Long channelId, Long id, LocalDateTime createTime,
-      String avatar) {
+      String avatar, String attachment) {
     this.serverId = serverId;
     this.channelId = channelId;
     this.id = id;
     this.createTime = createTime;
     this.avatar = avatar;
+    this.attachment = attachment;
   }
 }

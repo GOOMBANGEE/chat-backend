@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ApplicationStartupListener {
+public class SimpleBrokerChannelActivator {
 
   private final ChannelRepository channelRepository;
 

@@ -116,7 +116,6 @@ public class ChannelService {
         .name(name)
         .displayOrder(displayOrder)
         .open(open)
-        .logicDelete(false)
         .server(server)
         .category(category)
         .build();

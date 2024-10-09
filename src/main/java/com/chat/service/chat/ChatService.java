@@ -31,6 +31,11 @@ import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.chat.util.UUIDGenerator;
 import com.chat.util.websocket.StompAfterCommitSynchronization;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -173,6 +179,7 @@ public class ChatService {
         .id(id)
         .createTime(createTime)
         .avatar(avatar)
+        .attachment(filePath)
         .build();
   }
 
@@ -268,14 +275,41 @@ public class ChatService {
       ZoneId zoneid = ZoneId.of(timeZone);
       long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
 
-      String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
-      String filePath = path + fileName;
+      // jpg, png, bmp 스케일링
+      if (mimeType.startsWith("image/jpeg") ||
+          mimeType.startsWith("image/png") ||
+          mimeType.startsWith("image/bmp")) {
+        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
 
-      // 파일 저장
-      Files.write(Paths.get(filePath), decode);
+        BufferedImage scaledImage = scaleImage(originalImage);
+        int scaledWidth = scaledImage.getWidth();
+        int scaledHeight = scaledImage.getHeight();
 
-      attachmentLogicResult.put("mimeType", mimeType);
-      attachmentLogicResult.put("filePath", filePath);
+        String originalFilename = uuidGenerator.generateUUID() + "_" + epochMilli;
+        String originalFilePath = path + originalFilename + "." + extension;
+        String scaledFileName = originalFilename
+            + "&width=" + scaledWidth + "&height=" + scaledHeight;
+        String scaledFilePath = path + scaledFileName + "." + extension;
+
+        // 스케일링된 이미지를 파일로 저장
+        File originalFile = new File(originalFilePath);
+        File outputFile = new File(scaledFilePath);
+
+        ImageIO.write(originalImage, extension, originalFile);
+        ImageIO.write(scaledImage, extension, outputFile);
+
+        attachmentLogicResult.put("mimeType", mimeType);
+        attachmentLogicResult.put("filePath", scaledFilePath);
+      } else {
+        String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
+        String filePath = path + fileName;
+
+        // 이미지가 아닌 파일은 그대로 저장
+        Files.write(Paths.get(filePath), decode);
+
+        attachmentLogicResult.put("mimeType", mimeType);
+        attachmentLogicResult.put("filePath", filePath);
+      }
     }
     return attachmentLogicResult;
   }
@@ -284,19 +318,19 @@ public class ChatService {
     // MIME 타입과 관련 정보 매핑
     Map<String, String> mimeTypeMapping = Map.ofEntries(
         Map.entry("audio/mpeg", "mp3:" + filePathChatAudio),
-        Map.entry("audio/wav", "wav" + filePathChatAudio),
-        Map.entry("audio/mp4", "aac" + filePathChatAudio),
+        Map.entry("audio/wav", "wav:" + filePathChatAudio),
+        Map.entry("audio/mp4", "aac:" + filePathChatAudio),
         Map.entry("image/jpeg", "jpg:" + filePathChatImage),
         Map.entry("image/png", "png:" + filePathChatImage),
         Map.entry("image/gif", "gif:" + filePathChatImage),
         Map.entry("image/bmp", "bmp" + filePathChatImage),
-        Map.entry("image/webp", "webp" + filePathChatImage),
+        Map.entry("image/webp", "webp:" + filePathChatImage),
         Map.entry("text/plain", "txt:" + filePathChatText),
-        Map.entry("video/mp4", "mp4" + filePathChatVideo),
-        Map.entry("video/mpeg", "mpeg" + filePathChatVideo),
-        Map.entry("video/ogg", "ogg" + filePathChatVideo),
-        Map.entry("application/json", "json" + filePathChatJson),
-        Map.entry("application/pdf", "pdf" + filePathChatPdf),
+        Map.entry("video/mp4", "mp4:" + filePathChatVideo),
+        Map.entry("video/mpeg", "mpeg:" + filePathChatVideo),
+        Map.entry("video/ogg", "ogg:" + filePathChatVideo),
+        Map.entry("application/json", "json:" + filePathChatJson),
+        Map.entry("application/pdf", "pdf:" + filePathChatPdf),
         Map.entry("application/zip", "zip:" + filePathChatApplicationZip)
     );
 
@@ -315,7 +349,30 @@ public class ChatService {
     return attachmentInfo;
   }
 
+  private BufferedImage scaleImage(BufferedImage originalImage) {
+    int originalWidth = originalImage.getWidth();
+    int originalHeight = originalImage.getHeight();
+
+    int scaledWidth = originalWidth / 2;
+    int scaledHeight = originalHeight / 2;
+
+    Image scaledImage = originalImage.getScaledInstance(scaledWidth, scaledHeight,
+        Image.SCALE_SMOOTH);
+
+    BufferedImage outputImage = new BufferedImage(scaledWidth, scaledHeight,
+        BufferedImage.TYPE_INT_RGB);
+    Graphics2D graphics2D = outputImage.createGraphics();
+    graphics2D.drawImage(scaledImage, 0, 0, null);
+    graphics2D.dispose();
+
+    return outputImage;
+  }
+
   private void mentionLogic(Server server, Channel channel, Chat chat, User user, String message) {
+    if (message == null) {
+      return;
+    }
+
     List<Long> mentionedUserIdList = new ArrayList<>();
     // message 안에서 <@userId> 부분 모두 찾기
     String regex = "<@(\\d+)>";
@@ -353,6 +410,7 @@ public class ChatService {
       });
       notificationRepository.saveAll(notificationList);
     }
+
   }
 
   // reply logic

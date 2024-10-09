@@ -48,8 +48,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
@@ -500,16 +498,13 @@ public class UserService {
 
     BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
 
-    // 폴더없는경우 생성
-    Files.createDirectories(Paths.get(filePathUserImageAvatar));
-
     try {
-      // 이미지 리사이징 후 저장 (작은 이미지)
+      // 이미지 스케일링 후 저장 (작은 이미지)
       Thumbnails.of(originalImage)
           .size(32, 32)
           .toFile(new File(filePathSmall));
 
-      // 이미지 리사이징 후 저장 (큰 이미지)
+      // 이미지 스케일링 후 저장 (큰 이미지)
       Thumbnails.of(originalImage)
           .size(100, 100)
           .toFile(new File(filePathLarge));

@@ -139,7 +139,6 @@ public class ServerService {
         .name("일반")
         .displayOrder(1024.0)
         .open(true)
-        .logicDelete(false)
         .server(server)
         .category(category)
         .build();

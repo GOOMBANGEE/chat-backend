@@ -28,7 +28,7 @@ public class Channel {
 
   private boolean open;
 
-  private boolean logicDelete;
+  private boolean logicDelete = false;
 
   private Long lastMessageId;
 
@@ -41,12 +41,11 @@ public class Channel {
   private Category category;
 
   @Builder
-  public Channel(String name, Double displayOrder, boolean open, boolean logicDelete, Server server,
+  public Channel(String name, Double displayOrder, boolean open, Server server,
       Category category) {
     this.name = name;
     this.displayOrder = displayOrder;
     this.open = open;
-    this.logicDelete = logicDelete;
     this.server = server;
     this.category = category;
   }

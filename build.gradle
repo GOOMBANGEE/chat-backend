@@ -90,6 +90,7 @@ dependencies {
 
     // image resize
     implementation 'net.coobird:thumbnailator:0.4.20'
+    implementation 'com.twelvemonkeys.imageio:imageio-core:3.12.0'
 }
 
 tasks.named('test') {
