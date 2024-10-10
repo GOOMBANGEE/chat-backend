@@ -35,6 +35,8 @@ public class MessageDto {
   private String message;
   private String attachmentType;
   private String attachment;
+  private Integer attachmentWidth;
+  private Integer attachmentHeight;
 
   // 답장 들어올때
   private Long chatReference;
@@ -48,8 +50,8 @@ public class MessageDto {
   @Builder
   public MessageDto(MessageType messageType, Long serverId, Long categoryId, Long channelId,
       Long chatId, Long userId, String username, String avatar, String message,
-      String attachmentType,
-      String attachment, Long chatReference, boolean chatReferenceNotification,
+      String attachmentType, String attachment, Integer attachmentWidth, Integer attachmentHeight,
+      Long chatReference, boolean chatReferenceNotification,
       ChatInfoDto chatReferenceInfo, LocalDateTime createTime, LocalDateTime updateTime) {
     this.messageType = messageType;
     this.serverId = serverId;
@@ -62,6 +64,8 @@ public class MessageDto {
     this.message = message;
     this.attachmentType = attachmentType;
     this.attachment = attachment;
+    this.attachmentWidth = attachmentWidth;
+    this.attachmentHeight = attachmentHeight;
     this.chatReference = chatReference;
     this.chatReferenceNotification = chatReferenceNotification;
     this.chatReferenceInfo = chatReferenceInfo;

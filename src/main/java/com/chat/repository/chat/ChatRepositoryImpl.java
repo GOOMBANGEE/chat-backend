@@ -37,6 +37,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         qChat.message,
         qChat.attachmentType,
         qChat.attachment,
+        qChat.attachmentWidth,
+        qChat.attachmentHeight,
         qChat.enter,
         qChat.createTime,
         qChat.updateTime,

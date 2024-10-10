@@ -12,6 +12,7 @@ import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
+import com.chat.dto.chat.ChatAttachmentInfoDto;
 import com.chat.dto.chat.ChatInfoDto;
 import com.chat.dto.chat.ChatListResponseDto;
 import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
@@ -129,9 +130,13 @@ public class ChatService {
     User user = channelUserRelationInfoDto.getUser();
 
     // attachment logic
-    Map<String, String> attachmentLogicResult = this.attachmentLogic(messageDto);
-    String mimeType = attachmentLogicResult.get("mimeType");
-    String filePath = attachmentLogicResult.get("filePath");
+    ChatAttachmentInfoDto chatAttachmentInfoDto = this.attachmentLogic(messageDto);
+    String mimeType = chatAttachmentInfoDto != null ? chatAttachmentInfoDto.getMimeType() : null;
+    String filePath = chatAttachmentInfoDto != null ? chatAttachmentInfoDto.getFilePath() : null;
+    Integer attachmentWidth =
+        chatAttachmentInfoDto != null ? chatAttachmentInfoDto.getAttachmentWidth() : null;
+    Integer attachmentHeight =
+        chatAttachmentInfoDto != null ? chatAttachmentInfoDto.getAttachmentHeight() : null;
 
     LocalDateTime createTime = LocalDateTime.now();
     // 메세지 저장
@@ -142,6 +147,8 @@ public class ChatService {
         .message(message)
         .attachmentType(mimeType)
         .attachment(filePath)
+        .attachmentWidth(attachmentWidth)
+        .attachmentHeight(attachmentHeight)
         .createTime(createTime)
         .updateTime(createTime)
         .build();
@@ -180,6 +187,8 @@ public class ChatService {
         .createTime(createTime)
         .avatar(avatar)
         .attachment(filePath)
+        .attachmentWidth(attachmentWidth)
+        .attachmentHeight(attachmentHeight)
         .build();
   }
 
@@ -249,9 +258,9 @@ public class ChatService {
   }
 
   // attachmentLogic
-  private Map<String, String> attachmentLogic(MessageDto messageDto) throws IOException {
+  private ChatAttachmentInfoDto attachmentLogic(MessageDto messageDto) throws IOException {
+    ChatAttachmentInfoDto chatAttachmentInfoDto = null;
     String attachment = messageDto.getAttachment();
-    Map<String, String> attachmentLogicResult = new HashMap<>();
     if (attachment != null) {
       String[] base64 = attachment.split(",");
       // mimeType -> data:image/jpeg,png,gif,bmp,webp, video/mp4,mpeg,ogg,
@@ -282,8 +291,8 @@ public class ChatService {
         BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
 
         BufferedImage scaledImage = scaleImage(originalImage);
-        int scaledWidth = scaledImage.getWidth();
-        int scaledHeight = scaledImage.getHeight();
+        Integer scaledWidth = scaledImage.getWidth();
+        Integer scaledHeight = scaledImage.getHeight();
 
         String originalFilename = uuidGenerator.generateUUID() + "_" + epochMilli;
         String originalFilePath = path + originalFilename + "." + extension;
@@ -298,8 +307,12 @@ public class ChatService {
         ImageIO.write(originalImage, extension, originalFile);
         ImageIO.write(scaledImage, extension, outputFile);
 
-        attachmentLogicResult.put("mimeType", mimeType);
-        attachmentLogicResult.put("filePath", scaledFilePath);
+        chatAttachmentInfoDto = ChatAttachmentInfoDto.builder()
+            .mimeType(mimeType)
+            .filePath(scaledFilePath)
+            .attachmentWidth(scaledWidth)
+            .attachmentHeight(scaledHeight)
+            .build();
       } else {
         String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
         String filePath = path + fileName;
@@ -307,11 +320,13 @@ public class ChatService {
         // 이미지가 아닌 파일은 그대로 저장
         Files.write(Paths.get(filePath), decode);
 
-        attachmentLogicResult.put("mimeType", mimeType);
-        attachmentLogicResult.put("filePath", filePath);
+        chatAttachmentInfoDto = ChatAttachmentInfoDto.builder()
+            .mimeType(mimeType)
+            .filePath(filePath)
+            .build();
       }
     }
-    return attachmentLogicResult;
+    return chatAttachmentInfoDto;
   }
 
   private Map<String, String> getFileInfoFromMimeType(String mimeType) {

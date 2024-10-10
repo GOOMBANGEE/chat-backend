@@ -19,6 +19,8 @@ public class ChatInfoDto {
   private String message;
   private String attachmentType;
   private String attachment;
+  private Integer attachmentWidth;
+  private Integer attachmentHeight;
 
   private boolean enter;
 
@@ -36,7 +38,8 @@ public class ChatInfoDto {
   public ChatInfoDto(
       Long id,
       String username, String avatarImageSmall,
-      String message, String attachmentType, String attachment,
+      String message,
+      String attachmentType, String attachment, Integer attachmentWidth, Integer attachmentHeight,
       boolean enter,
       LocalDateTime createTime, LocalDateTime updateTime,
       Long referenceId, String referenceUsername, String referenceAvatarImageSmall,
@@ -48,6 +51,8 @@ public class ChatInfoDto {
     this.message = message;
     this.attachmentType = attachmentType;
     this.attachment = attachment;
+    this.attachmentWidth = attachmentWidth;
+    this.attachmentHeight = attachmentHeight;
     this.enter = enter;
     this.createTime = createTime;
     this.updateTime = updateTime;

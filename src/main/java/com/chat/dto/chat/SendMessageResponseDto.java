@@ -21,15 +21,20 @@ public class SendMessageResponseDto {
   private String avatar;
 
   private String attachment;
+  private Integer attachmentWidth;
+  private Integer attachmentHeight;
 
   @Builder
-  public SendMessageResponseDto(Long serverId, Long channelId, Long id, LocalDateTime createTime,
-      String avatar, String attachment) {
+  public SendMessageResponseDto(Long serverId, Long channelId,
+      Long id, LocalDateTime createTime, String avatar,
+      String attachment, Integer attachmentWidth, Integer attachmentHeight) {
     this.serverId = serverId;
     this.channelId = channelId;
     this.id = id;
     this.createTime = createTime;
     this.avatar = avatar;
     this.attachment = attachment;
+    this.attachmentWidth = attachmentWidth;
+    this.attachmentHeight = attachmentHeight;
   }
 }

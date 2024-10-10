@@ -39,6 +39,9 @@ public class Chat {
   private String message;
   private String attachmentType;
   private String attachment;
+  private Integer attachmentWidth;
+  private Integer attachmentHeight;
+
   private boolean logicDelete = false;
   private boolean enter;
 
@@ -52,7 +55,8 @@ public class Chat {
   @Builder
   public Chat(
       Server server, Channel channel, User user,
-      String message, String attachmentType, String attachment,
+      String message,
+      String attachmentType, String attachment, Integer attachmentWidth, Integer attachmentHeight,
       boolean enter,
       LocalDateTime createTime, LocalDateTime updateTime) {
     this.server = server;
@@ -61,6 +65,8 @@ public class Chat {
     this.message = message;
     this.attachmentType = attachmentType;
     this.attachment = attachment;
+    this.attachmentWidth = attachmentWidth;
+    this.attachmentHeight = attachmentHeight;
     this.enter = enter;
     this.createTime = createTime;
     this.updateTime = updateTime;
@@ -86,6 +92,8 @@ public class Chat {
         .message(this.message)
         .attachmentType(this.attachmentType)
         .attachment(this.attachment)
+        .attachmentWidth(this.attachmentWidth)
+        .attachmentHeight(this.attachmentHeight)
         .chatReferenceInfo(chatRefInfoDto)
         .createTime(this.createTime)
         .build();
