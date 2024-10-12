@@ -20,18 +20,23 @@ public class ChannelCreateResponseDto {
 
   private Long categoryId;
 
+  private Long userDirectMessageId;
+
   private List<Long> allowRoleIdList;
 
   private List<Long> allowUserIdList;
 
+
   @Builder
   public ChannelCreateResponseDto(Long id, String name, Double displayOrder, Long serverId,
-      Long categoryId, List<Long> allowRoleIdList, List<Long> allowUserIdList) {
+      Long categoryId, Long userDirectMessageId,
+      List<Long> allowRoleIdList, List<Long> allowUserIdList) {
     this.id = id;
     this.name = name;
     this.displayOrder = displayOrder;
     this.serverId = serverId;
     this.categoryId = categoryId;
+    this.userDirectMessageId = userDirectMessageId;
     this.allowRoleIdList = allowRoleIdList;
     this.allowUserIdList = allowUserIdList;
   }

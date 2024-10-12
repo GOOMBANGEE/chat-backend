@@ -54,8 +54,11 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
   public List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(
       User user) {
     return queryFactory
-        .select(new QUserInfoForFriendListResponseDto(qUserFriend.friend.id,
-            qUserFriend.friend.username))
+        .select(new QUserInfoForFriendListResponseDto(
+            qUserFriend.friend.id,
+            qUserFriend.friend.username,
+            qUserFriend.friend.avatarImageSmall,
+            qUserFriend.friend.online))
         .from(qUserFriend)
         .where(userEq(user))
         .fetch();

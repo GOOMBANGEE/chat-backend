@@ -29,13 +29,10 @@ public class ChannelController {
   private static final String CHAT_INVALID = "VALID:CHAT_INVALID";
 
   // 채널 생성
-  @PostMapping("/{serverId}/create")
+  @PostMapping("/create")
   public ResponseEntity<ChannelCreateResponseDto> create(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
       @RequestBody @Valid ChannelCreateRequestDto requestDto) throws JsonProcessingException {
-    ChannelCreateResponseDto responseDto = channelService.create(serverId, requestDto);
+    ChannelCreateResponseDto responseDto = channelService.create(requestDto);
 
     return ResponseEntity.ok(responseDto);
   }
@@ -92,6 +89,7 @@ public class ChannelController {
 //    return ResponseEntity.ok(responseDto);
 //  }
 
+  // todo
   // 채널 메시지 읽기처리
   @PostMapping("/{serverId}/{channelId}/{chatId}/read")
   public ResponseEntity<EmptyResponseDto> read(

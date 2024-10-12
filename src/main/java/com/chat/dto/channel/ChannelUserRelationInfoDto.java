@@ -28,4 +28,13 @@ public class ChannelUserRelationInfoDto {
     this.channelUserRelation = channelUserRelation;
     this.user = user;
   }
+  
+  @QueryProjection
+  @Builder
+  public ChannelUserRelationInfoDto(Channel channel,
+      ChannelUserRelation channelUserRelation, User user) {
+    this.channel = channel;
+    this.channelUserRelation = channelUserRelation;
+    this.user = user;
+  }
 }

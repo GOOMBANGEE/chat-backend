@@ -115,11 +115,7 @@ public class ChatService {
     Long serverId = messageDto.getServerId();
     Long channelId = messageDto.getChannelId();
     String message = messageDto.getMessage();
-    Long userId = messageDto.getUserId();
     String email = customUserDetailsService.getEmailByUserDetails();
-
-    // direct message logic
-    channelId = this.directMessageLogic(channelId, userId, email);
 
     // validChannelUserRelation
     ChannelUserRelationInfoDto channelUserRelationInfoDto = this.validChannelUserRelation
@@ -178,6 +174,16 @@ public class ChatService {
         new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
     );
 
+    // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
+    List<Long> userIdList = channelUserRelationRepository
+        .fetchUserIdListWhoConnectedButNotSubscribe(channel);
+    userIdList.forEach(userId -> {
+      String userUrl = SUB_USER + userId;
+      TransactionSynchronizationManager.registerSynchronization(
+          new StompAfterCommitSynchronization(messagingTemplate, userUrl, newMessageDto)
+      );
+    });
+
     // return
     Long id = chat.fetchChatIdForSendMessageResponse();
     return SendMessageResponseDto.builder()
@@ -190,47 +196,6 @@ public class ChatService {
         .attachmentWidth(attachmentWidth)
         .attachmentHeight(attachmentHeight)
         .build();
-  }
-
-  private Long directMessageLogic(Long channelId, Long userId, String email) {
-    // dm 채널이 없는상태 -> 채널생성 후 해당 채널로 메시지 발행
-    if (channelId == null && userId != null) {
-      User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-          .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-      User mentionedUser = userRepository.findByIdAndLogicDeleteFalse(userId)
-          .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-      Channel channel = Channel.builder()
-          .open(true)
-          .build();
-      channelRepository.save(channel);
-      // 보내는유저와 받는유저에 대해서 channelUserRelation 추가
-      List<User> userList = new ArrayList<>();
-      userList.add(user);
-      userList.add(mentionedUser);
-
-      List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-      userList.forEach(userListUser -> {
-        ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
-            .channel(channel)
-            .user(userListUser)
-            .readMessage(true)
-            .writeMessage(true)
-            .viewHistory(true)
-            .build();
-        channelUserRelationList.add(channelUserRelation);
-      });
-      channelUserRelationRepository.saveAll(channelUserRelationList);
-      channelId = channel.getChannelIdForChannelCreate();
-
-      // dm 받는 유저에게 채널생성알림
-      String userUrl = SUB_USER + userId;
-      MessageDto newMessageDto = MessageDto.builder()
-          .messageType(MessageType.DIRECT_MESSAGE)
-          .channelId(channelId)
-          .build();
-      messagingTemplate.convertAndSend(userUrl, newMessageDto);
-    }
-    return channelId;
   }
 
   private ChannelUserRelationInfoDto validChannelUserRelation(Long serverId, Long channelId,

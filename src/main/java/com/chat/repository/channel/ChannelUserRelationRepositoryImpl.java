@@ -26,19 +26,35 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
   @Override
   public ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
       Long serverId, Long channelId, String email) {
-    return queryFactory
-        .select(new QChannelUserRelationInfoDto(
-            qChannelUserRelation.channel.server,
-            qChannelUserRelation.channel,
-            qChannelUserRelation,
-            qChannelUserRelation.user
-        ))
-        .from(qChannelUserRelation)
-        .where(
-            serverIdEq(serverId),
-            channelIdEq(channelId),
-            userEmailEq(email))
-        .fetchOne();
+    if (serverId == null) {
+      return queryFactory
+          .select(new QChannelUserRelationInfoDto(
+              qChannelUserRelation.channel,
+              qChannelUserRelation,
+              qChannelUserRelation.user
+          ))
+          .from(qChannelUserRelation)
+          .where(
+              channelIdEq(channelId),
+              userEmailEq(email)
+          )
+          .fetchOne();
+    } else {
+      return queryFactory
+          .select(new QChannelUserRelationInfoDto(
+              qChannelUserRelation.channel.server,
+              qChannelUserRelation.channel,
+              qChannelUserRelation,
+              qChannelUserRelation.user
+          ))
+          .from(qChannelUserRelation)
+          .where(
+              serverIdEq(serverId),
+              channelIdEq(channelId),
+              userEmailEq(email)
+          )
+          .fetchOne();
+    }
   }
 
   private BooleanExpression serverIdEq(Long serverId) {
@@ -116,5 +132,34 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private BooleanExpression serverEq(Server server) {
     return isEmpty(server) ? null : qChannelUserRelation.channel.server.eq(server);
+  }
+
+  // 두 유저가 속해있는 dm채널이 있는지 확인
+  @Override
+  public Optional<ChannelUserRelation> searchDirectMessageChannel(User user, User mentionedUser) {
+    return Optional.ofNullable(queryFactory
+        .select(qChannelUserRelation)
+        .from(qChannelUserRelation)
+        .where(userEq(user), mentionedUserEq(mentionedUser))
+        .fetchOne());
+  }
+
+  private BooleanExpression mentionedUserEq(User mentionedUser) {
+    return qChannelUserRelation.userDirectMessage.eq(mentionedUser);
+  }
+
+  // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
+  // channel eq, user online true
+  @Override
+  public List<Long> fetchUserIdListWhoConnectedButNotSubscribe(Channel channel) {
+    return queryFactory
+        .select(qChannelUserRelation.user.id)
+        .from(qChannelUserRelation)
+        .where(channelEq(channel), userOnlineTrue())
+        .fetch();
+  }
+
+  private BooleanExpression userOnlineTrue() {
+    return qChannelUserRelation.user.online.isTrue();
   }
 }

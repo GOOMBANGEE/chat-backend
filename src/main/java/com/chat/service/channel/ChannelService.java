@@ -62,155 +62,213 @@ public class ChannelService {
   private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
   private static final String NO_CHANNEL_CREATE_PERMISSION = "SERVER:NO_CHANNEL_CREATE_PERMISSION";
   private static final String CHANNEL_NOT_FOUND = "CHANNEL:CHANNEL_NOT_FOUND";
+  private static final String CHANNEL_ALREADY_EXIST = "CHANNEL:CHANNEL_ALREADY_EXIST";
   private static final String CHAT_NOT_FOUND = "CHAT:CHAT_NOT_FOUND";
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
+  private static final String SUB_USER = "/sub/user/";
   private final ObjectMapper mapper = new ObjectMapper();
   private final ChatRepository chatRepository;
 
 
   @Transactional
-  public ChannelCreateResponseDto create(
-      Long serverId, ChannelCreateRequestDto requestDto) throws JsonProcessingException {
+  public ChannelCreateResponseDto create(ChannelCreateRequestDto requestDto)
+      throws JsonProcessingException {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository
         .findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    Server server = serverRepository
-        .findByIdAndLogicDeleteFalse(serverId)
-        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
-    ServerUserRelation serverUserRelation = serverUserRelationRepository
-        .findByUserAndServerAndLogicDeleteFalse(user, server)
-        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
-    List<ServerRole> serverRoleUserRelation = serverRoleUserRelationRepository
-        .fetchServerRoleListByServerAndUser(server, user);
+    Long serverId = requestDto.getServerId();
+    // dmChannelLogic
+    if (serverId == null) {
+      // 이미 채널이 있는경우 만들지않음 -> 두 유저가 관계를 가지고있는 채널이있다면 exception
+      Long userId = requestDto.getUserId();
+      User mentionedUser = userRepository.findByIdAndLogicDeleteFalse(userId)
+          .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+      if (channelUserRelationRepository
+          .searchDirectMessageChannel(user, mentionedUser)
+          .isPresent()) {
+        throw new ChannelException(CHANNEL_ALREADY_EXIST);
+      }
 
-    Long categoryId = requestDto.getCategoryId();
-    Category category = categoryRepository.findByIdAndLogicDeleteFalse(categoryId)
-        .orElseThrow(() -> new CategoryException(CATEGORY_NOT_FOUND));
+      Channel channel = Channel.builder()
+          .open(true)
+          .build();
+      channelRepository.save(channel);
 
-    // 채널 생성 권한 확인
-    // 서버의 주인이거나, 역할 중 하나가 채널 생성 권한이 있는지 확인
-    boolean authorized = serverUserRelation.isOwner() ||
-        serverRoleUserRelation
-            .stream()
-            .anyMatch(ServerRole::checkCreateChannel);
-
-    // 권한이 없을 경우 예외처리
-    if (!authorized) {
-      throw new ServerException(NO_CHANNEL_CREATE_PERMISSION);
-    }
-
-    // 만약 역할, 유저를 지정한 경우 해당 역할, 유저에게 읽기 권한 부여
-    List<Long> allowRoleIdList = requestDto.getAllowRoleIdList();
-    List<Long> allowUserIdList = requestDto.getAllowUserIdList();
-
-    String name = requestDto.getName();
-    Double displayOrder = channelRepository.fetchMaxDisplayOrderByCategory(category) * 2;
-    boolean open = allowRoleIdList == null && allowUserIdList == null;
-
-    Channel channel = Channel.builder()
-        .name(name)
-        .displayOrder(displayOrder)
-        .open(open)
-        .server(server)
-        .category(category)
-        .build();
-    channelRepository.save(channel);
-
-    // 공개 채널인 경우 서버에 참가중인 모든 유저를 ChannelUserRelation에 추가
-    if (open) {
-      List<User> userList = serverUserRelationRepository.fetchUserListByServer(server);
+      // 보내는유저와 받는유저에 대해서 channelUserRelation 추가
       List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-      userList.forEach(
-          serverUser -> {
-            ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
+      ChannelUserRelation channelUserRelation1 = ChannelUserRelation.builder()
+          .channel(channel)
+          .user(user)
+          .userDirectMessage(mentionedUser)
+          .readMessage(true)
+          .writeMessage(true)
+          .viewHistory(true)
+          .build();
+      ChannelUserRelation channelUserRelation2 = ChannelUserRelation.builder()
+          .channel(channel)
+          .user(mentionedUser)
+          .userDirectMessage(user)
+          .readMessage(true)
+          .writeMessage(true)
+          .viewHistory(true)
+          .build();
+      channelUserRelationList.add(channelUserRelation1);
+      channelUserRelationList.add(channelUserRelation2);
+
+      channelUserRelationRepository.saveAll(channelUserRelationList);
+      Long channelId = channel.getChannelIdForChannelCreate();
+
+      // dm 받는 유저에게 채널생성알림
+      String userUrl = SUB_USER + userId;
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.CHANNEL_CREATE_DIRECT_MESSAGE)
+          .channelId(channelId)
+          .build();
+      messagingTemplate.convertAndSend(userUrl, newMessageDto);
+
+      return ChannelCreateResponseDto.builder()
+          .id(channelId)
+          .userDirectMessageId(userId)
+          .build();
+    } else {
+      Server server = serverRepository
+          .findByIdAndLogicDeleteFalse(serverId)
+          .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+      ServerUserRelation serverUserRelation = serverUserRelationRepository
+          .findByUserAndServerAndLogicDeleteFalse(user, server)
+          .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+      List<ServerRole> serverRoleUserRelation = serverRoleUserRelationRepository
+          .fetchServerRoleListByServerAndUser(server, user);
+
+      Long categoryId = requestDto.getCategoryId();
+      Category category = categoryRepository.findByIdAndLogicDeleteFalse(categoryId)
+          .orElseThrow(() -> new CategoryException(CATEGORY_NOT_FOUND));
+
+      // 채널 생성 권한 확인
+      // 서버의 주인이거나, 역할 중 하나가 채널 생성 권한이 있는지 확인
+      boolean authorized = serverUserRelation.isOwner() ||
+          serverRoleUserRelation
+              .stream()
+              .anyMatch(ServerRole::checkCreateChannel);
+
+      // 권한이 없을 경우 예외처리
+      if (!authorized) {
+        throw new ServerException(NO_CHANNEL_CREATE_PERMISSION);
+      }
+
+      // 만약 역할, 유저를 지정한 경우 해당 역할, 유저에게 읽기 권한 부여
+      List<Long> allowRoleIdList = requestDto.getAllowRoleIdList();
+      List<Long> allowUserIdList = requestDto.getAllowUserIdList();
+
+      String name = requestDto.getName();
+      Double displayOrder = channelRepository.fetchMaxDisplayOrderByCategory(category) * 2;
+      boolean open = allowRoleIdList == null && allowUserIdList == null;
+
+      Channel channel = Channel.builder()
+          .name(name)
+          .displayOrder(displayOrder)
+          .open(open)
+          .server(server)
+          .category(category)
+          .build();
+      channelRepository.save(channel);
+
+      // 공개 채널인 경우 서버에 참가중인 모든 유저를 ChannelUserRelation에 추가
+      if (open) {
+        List<User> userList = serverUserRelationRepository.fetchUserListByServer(server);
+        List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
+        userList.forEach(
+            serverUser -> {
+              ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
+                  .channel(channel)
+                  .user(serverUser)
+                  .readMessage(true)
+                  .writeMessage(true)
+                  .viewHistory(true)
+                  .build();
+              channelUserRelationList.add(channelUserRelation);
+            }
+        );
+        channelUserRelationRepository.saveAll(channelUserRelationList);
+      }
+
+      if (allowRoleIdList != null) {
+        // 여러 역할 한번에 조회
+        List<ServerRole> serverRoleList = serverRoleRepository.findByIdInAndLogicDeleteFalse(
+            allowRoleIdList);
+        // 조회된 역할들 순회하면서 ChannelServerRoleRelation 생성
+        List<ChannelServerRoleRelation> channelServerRoleRelationList = serverRoleList.stream()
+            .map(serverRole -> ChannelServerRoleRelation.builder()
                 .channel(channel)
-                .user(serverUser)
+                .serverRole(serverRole)
                 .readMessage(true)
                 .writeMessage(true)
                 .viewHistory(true)
-                .build();
-            channelUserRelationList.add(channelUserRelation);
-          }
-      );
-      channelUserRelationRepository.saveAll(channelUserRelationList);
-    }
+                .build())
+            .toList();
+        // 한번에 저장
+        channelServerRoleRelationRepository.saveAll(channelServerRoleRelationList);
 
-    if (allowRoleIdList != null) {
-      // 여러 역할 한번에 조회
-      List<ServerRole> serverRoleList = serverRoleRepository.findByIdInAndLogicDeleteFalse(
-          allowRoleIdList);
-      // 조회된 역할들 순회하면서 ChannelServerRoleRelation 생성
-      List<ChannelServerRoleRelation> channelServerRoleRelationList = serverRoleList.stream()
-          .map(serverRole -> ChannelServerRoleRelation.builder()
+        // 서버에 해당 역할을 가진 유저 조회
+        List<User> userList = serverRoleUserRelationRepository
+            .fetchUserByServerRoleIn(serverRoleList);
+        List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
+        // 해당 역할을 가진 유저들을 순회하면서 ChannelUserRelation 생성
+        userList.forEach(serverRoleUser -> {
+          ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
               .channel(channel)
-              .serverRole(serverRole)
+              .user(serverRoleUser)
               .readMessage(true)
               .writeMessage(true)
               .viewHistory(true)
-              .build())
-          .toList();
-      // 한번에 저장
-      channelServerRoleRelationRepository.saveAll(channelServerRoleRelationList);
+              .build();
+          channelUserRelationList.add(channelUserRelation);
+        });
+        channelUserRelationRepository.saveAll(channelUserRelationList);
+      }
 
-      // 서버에 해당 역할을 가진 유저 조회
-      List<User> userList = serverRoleUserRelationRepository
-          .fetchUserByServerRoleIn(serverRoleList);
-      List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-      // 해당 역할을 가진 유저들을 순회하면서 ChannelUserRelation 생성
-      userList.forEach(serverRoleUser -> {
-        ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
-            .channel(channel)
-            .user(serverRoleUser)
-            .readMessage(true)
-            .writeMessage(true)
-            .viewHistory(true)
-            .build();
-        channelUserRelationList.add(channelUserRelation);
-      });
-      channelUserRelationRepository.saveAll(channelUserRelationList);
+      if (allowUserIdList != null) {
+        // 여러 유저 한번에 조회
+        List<User> userList = userRepository.findByIdInAndLogicDeleteFalse(allowUserIdList);
+        // 조회된 유저들 순회하면서 ChannelUserRelation 생성
+        List<ChannelUserRelation> channelUserRelationList = userList.stream()
+            .map(userInList -> ChannelUserRelation.builder()
+                .channel(channel)
+                .user(userInList)
+                .readMessage(true)
+                .writeMessage(true)
+                .viewHistory(true)
+                .build())
+            .toList();
+        // 한번에 저장
+        channelUserRelationRepository.saveAll(channelUserRelationList);
+      }
+
+      Long channelId = channel.getChannelIdForChannelCreate();
+      ChannelCreateResponseDto responseDto = ChannelCreateResponseDto.builder()
+          .id(channelId)
+          .name(name)
+          .displayOrder(displayOrder)
+          .serverId(serverId)
+          .categoryId(categoryId)
+          .allowRoleIdList(allowRoleIdList)
+          .allowUserIdList(allowUserIdList)
+          .build();
+      // stomp pub
+      String serverUrl = SUB_SERVER + serverId;
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.CHANNEL_CREATE)
+          .serverId(serverId)
+          .message(mapper.writeValueAsString(responseDto))
+          .build();
+      messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+      return responseDto;
     }
-
-    if (allowUserIdList != null) {
-      // 여러 유저 한번에 조회
-      List<User> userList = userRepository.findByIdInAndLogicDeleteFalse(allowUserIdList);
-      // 조회된 유저들 순회하면서 ChannelUserRelation 생성
-      List<ChannelUserRelation> channelUserRelationList = userList.stream()
-          .map(userInList -> ChannelUserRelation.builder()
-              .channel(channel)
-              .user(userInList)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .build())
-          .toList();
-      // 한번에 저장
-      channelUserRelationRepository.saveAll(channelUserRelationList);
-    }
-
-    Long channelId = channel.getChannelIdForChannelCreate();
-    ChannelCreateResponseDto responseDto = ChannelCreateResponseDto.builder()
-        .id(channelId)
-        .name(name)
-        .displayOrder(displayOrder)
-        .serverId(serverId)
-        .categoryId(categoryId)
-        .allowRoleIdList(allowRoleIdList)
-        .allowUserIdList(allowUserIdList)
-        .build();
-    // stomp pub
-    String serverUrl = SUB_SERVER + serverId;
-    MessageDto newMessageDto = MessageDto.builder()
-        .messageType(MessageType.CHANNEL_CREATE)
-        .serverId(serverId)
-        .message(mapper.writeValueAsString(responseDto))
-        .build();
-    messagingTemplate.convertAndSend(serverUrl, newMessageDto);
-    return responseDto;
   }
 
   @Transactional

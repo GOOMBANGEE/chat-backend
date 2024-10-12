@@ -23,4 +23,11 @@ public interface ChannelUserRelationRepositoryCustom {
 
   List<ChannelUserRelation> fetchChannelUserRelationListByServerAndUser
       (Server server, User user);
+
+  // 두 유저가 속해있는 dm채널이 있는지 확인
+  Optional<ChannelUserRelation> searchDirectMessageChannel(User user, User mentionedUser);
+
+  // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
+  // channel eq, user online true
+  List<Long> fetchUserIdListWhoConnectedButNotSubscribe(Channel channel);
 }

@@ -27,6 +27,9 @@ public class ChannelUserRelation {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn
+  private User userDirectMessage;
 
   private boolean readMessage;
 
@@ -36,22 +39,18 @@ public class ChannelUserRelation {
 
   private Long lastReadMessageId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn
-  private User userDirectMessage;
-
   @Builder
-  public ChannelUserRelation(Long id, Channel channel, User user, boolean readMessage,
-      boolean writeMessage, boolean viewHistory, Long lastReadMessageId,
-      User userDirectMessage) {
+  public ChannelUserRelation(Long id, Channel channel, User user, User userDirectMessage,
+      boolean readMessage, boolean writeMessage, boolean viewHistory, Long lastReadMessageId
+  ) {
     this.id = id;
     this.channel = channel;
     this.user = user;
+    this.userDirectMessage = userDirectMessage;
     this.readMessage = readMessage;
     this.writeMessage = writeMessage;
     this.viewHistory = viewHistory;
     this.lastReadMessageId = lastReadMessageId;
-    this.userDirectMessage = userDirectMessage;
   }
 
   public void updateLastReadMessageId(Long lastReadMessageId) {
