@@ -39,7 +39,7 @@ public class ChannelUserRelation {
 
   private Long lastReadMessageId;
 
-  private boolean subscribe;
+  private boolean subscribe = false;
 
   @Builder
   public ChannelUserRelation(Long id, Channel channel, User user, User userDirectMessage,

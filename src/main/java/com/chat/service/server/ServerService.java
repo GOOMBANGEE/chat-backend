@@ -373,10 +373,20 @@ public class ServerService {
     Long userId = userInfoDto.getId();
     String username = userInfoDto.getUsername();
 
-    String serverUrl = SUB_SERVER + serverId + "/" + channelId;
+    String channelUrl = SUB_CHANNEL + channelId;
     MessageDto newMessageDto = chat
         .buildMessageDtoForSeverJoinResponse(serverId, channelId, userId, username);
-    messagingTemplate.convertAndSend(serverUrl, newMessageDto);
+    messagingTemplate.convertAndSend(channelUrl, newMessageDto);
+
+    // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
+    List<Long> userIdList = channelUserRelationRepository
+        .fetchUserIdListWhoConnectedButNotSubscribe(channel);
+    userIdList.forEach(userIdInList -> {
+      String userUrl = SUB_USER + userIdInList;
+      TransactionSynchronizationManager.registerSynchronization(
+          new StompAfterCommitSynchronization(messagingTemplate, userUrl, newMessageDto)
+      );
+    });
 
     return responseDto;
   }
