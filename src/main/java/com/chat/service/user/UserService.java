@@ -20,7 +20,10 @@ import com.chat.dto.user.FriendListResponseDto;
 import com.chat.dto.user.FriendRejectRequestDto;
 import com.chat.dto.user.FriendRequestDto;
 import com.chat.dto.user.FriendWaitingListResponseDto;
+import com.chat.dto.user.GetNotificationResponseDto;
 import com.chat.dto.user.LoginRequestDto;
+import com.chat.dto.user.NotificationDirectMessageInfoDto;
+import com.chat.dto.user.NotificationServerInfoDto;
 import com.chat.dto.user.ProfileResponseDto;
 import com.chat.dto.user.RecoverConfirmRequestDto;
 import com.chat.dto.user.RecoverRequestDto;
@@ -35,6 +38,7 @@ import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
 import com.chat.repository.server.ServerUserRelationRepository;
+import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.RoleRepository;
 import com.chat.repository.user.UserFriendRepository;
 import com.chat.repository.user.UserFriendTempRepository;
@@ -83,6 +87,7 @@ public class UserService {
   private final UserFriendRepository userFriendRepository;
   private final UserFriendTempRepository userFriendTempRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
+  private final NotificationRepository notificationRepository;
 
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final TokenProvider tokenProvider;
@@ -106,6 +111,7 @@ public class UserService {
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_USER = "/sub/user/";
   private static final String SUB_SERVER = "/sub/server/";
+
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -746,5 +752,19 @@ public class UserService {
         .username(username)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
+  }
+
+  public GetNotificationResponseDto getNotification() {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    List<NotificationDirectMessageInfoDto> notificationDirectMessageInfoDtoList = notificationRepository
+        .fetchNotificationInfoDirectMessageDtoByUserEmail(email);
+    List<NotificationServerInfoDto> notificationServerInfoDtoList = notificationRepository
+        .fetchNotificationServerInfoDtoByUserEmail(email);
+
+    return GetNotificationResponseDto.builder()
+        .notificationDirectMessageInfoDtoList(notificationDirectMessageInfoDtoList)
+        .notificationServerInfoDtoList(notificationServerInfoDtoList)
+        .build();
   }
 }

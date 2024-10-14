@@ -13,6 +13,7 @@ import com.chat.dto.user.FriendListResponseDto;
 import com.chat.dto.user.FriendRejectRequestDto;
 import com.chat.dto.user.FriendRequestDto;
 import com.chat.dto.user.FriendWaitingListResponseDto;
+import com.chat.dto.user.GetNotificationResponseDto;
 import com.chat.dto.user.LoginRequestDto;
 import com.chat.dto.user.ProfileResponseDto;
 import com.chat.dto.user.RecoverConfirmRequestDto;
@@ -251,5 +252,11 @@ public class UserController {
       @RequestBody @Valid FriendDeleteRequestDto requestDto) {
     userService.friendDelete(requestDto);
     return ResponseEntity.ok(null);
+  }
+
+  @GetMapping("/notification")
+  public ResponseEntity<GetNotificationResponseDto> getNotification() {
+    GetNotificationResponseDto responseDto = userService.getNotification();
+    return ResponseEntity.ok(responseDto);
   }
 }

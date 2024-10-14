@@ -149,6 +149,8 @@ public class ChatService {
         .updateTime(createTime)
         .build();
 
+    this.directMessageLogic(channel, channelUserRelation, chat, user);
+
     // mention logic
     this.mentionLogic(server, channel, chat, user, message);
 
@@ -346,6 +348,22 @@ public class ChatService {
     graphics2D.dispose();
 
     return outputImage;
+  }
+
+  private void directMessageLogic(Channel channel, ChannelUserRelation channelUserRelation,
+      Chat chat, User user) {
+    if (channelUserRelation.isDirectMessageChannel()) {
+      // dm인 경우 notification 생성
+      User mentionedUser = channelUserRelation.fetchMentionedUserForSendMessage();
+      Notification notification = Notification.builder()
+          .channel(channel)
+          .chat(chat)
+          .user(user)
+          .mentionedUser(mentionedUser)
+          .build();
+
+      notificationRepository.save(notification);
+    }
   }
 
   private void mentionLogic(Server server, Channel channel, Chat chat, User user, String message) {

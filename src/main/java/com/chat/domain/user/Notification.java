@@ -41,13 +41,11 @@ public class Notification {
   private boolean isRead = false;
 
   @Builder
-  public Notification(Server server, Channel channel, Chat chat, User user, User mentionedUser,
-      boolean isRead) {
+  public Notification(Server server, Channel channel, Chat chat, User user, User mentionedUser) {
     this.server = server;
     this.channel = channel;
     this.chat = chat;
     this.user = user;
     this.mentionedUser = mentionedUser;
-    this.isRead = isRead;
   }
 }

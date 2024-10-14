@@ -56,4 +56,12 @@ public class ChannelUserRelation {
   public void updateLastReadMessageId(Long lastReadMessageId) {
     this.lastReadMessageId = lastReadMessageId;
   }
+
+  public boolean isDirectMessageChannel() {
+    return userDirectMessage != null;
+  }
+
+  public User fetchMentionedUserForSendMessage() {
+    return this.userDirectMessage;
+  }
 }
