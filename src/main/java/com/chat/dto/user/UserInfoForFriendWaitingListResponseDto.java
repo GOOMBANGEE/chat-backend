@@ -14,10 +14,17 @@ public class UserInfoForFriendWaitingListResponseDto {
 
   private String username;
 
+  private String avatarImageSmall;
+
+  private Boolean online;
+
   @QueryProjection
   @Builder
-  public UserInfoForFriendWaitingListResponseDto(Long id, String username) {
+  public UserInfoForFriendWaitingListResponseDto(Long id, String username, String avatarImageSmall,
+      Boolean online) {
     this.id = id;
     this.username = username;
+    this.avatarImageSmall = avatarImageSmall;
+    this.online = online;
   }
 }

@@ -45,8 +45,11 @@ public class UserFriendTempRepositoryImpl implements UserFriendTempRepositoryCus
   @Override
   public List<UserInfoForFriendWaitingListResponseDto> fetchUserInfoByUser(User user) {
     return queryFactory
-        .select(new QUserInfoForFriendWaitingListResponseDto(qUserFriendTemp.user.id,
-            qUserFriendTemp.user.username))
+        .select(new QUserInfoForFriendWaitingListResponseDto(
+            qUserFriendTemp.user.id,
+            qUserFriendTemp.user.username,
+            qUserFriendTemp.user.avatarImageSmall,
+            qUserFriendTemp.user.online))
         .from(qUserFriendTemp)
         .where(friendEq(user))
         .fetch();

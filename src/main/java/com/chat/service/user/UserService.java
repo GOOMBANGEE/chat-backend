@@ -631,7 +631,7 @@ public class UserService {
     String username = requestDto.getUsername();
     String userUrl = SUB_USER + friendId;
     Long id = requestDto.getId();
-    String avatarImageSmall = requestDto.getAvatarImageSmall();
+    String avatarImageSmall = requestDto.getAvatar();
     // 요청 보내는사람의 정보(id)를 요청받는사람(friendId)에게 보냄
     MessageDto newMessageDto = MessageDto.builder()
         .messageType(MessageType.FRIEND_REQUEST)

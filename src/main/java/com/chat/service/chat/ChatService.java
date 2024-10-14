@@ -465,7 +465,7 @@ public class ChatService {
     chatRepository.save(chat);
 
     // stomp pub
-    String channelUrl = SUB_CHANNEL + serverId + "/" + channelId;
+    String channelUrl = SUB_CHANNEL + channelId;
     MessageDto newMessageDto = MessageDto.builder()
         .messageType(MessageType.CHAT_UPDATE)
         .serverId(serverId)

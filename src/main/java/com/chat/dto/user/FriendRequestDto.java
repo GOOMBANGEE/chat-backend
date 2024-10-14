@@ -10,15 +10,16 @@ import lombok.NoArgsConstructor;
 public class FriendRequestDto {
 
   private Long id;
-
   private String username;
+  private String avatar;
 
   private String friendName;
 
   @Builder
-  public FriendRequestDto(Long id, String username, String friendName) {
+  public FriendRequestDto(Long id, String username, String avatar, String friendName) {
     this.id = id;
     this.username = username;
+    this.avatar = avatar;
     this.friendName = friendName;
   }
 }
