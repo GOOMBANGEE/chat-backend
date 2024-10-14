@@ -104,6 +104,7 @@ public class UserService {
   private static final String USER_NOT_FOUND = "USER:USER_NOT_FOUND";
   private static final String IMAGE_INVALID = "USER:IMAGE_INVALID";
   private static final String IMAGE_SAVE_ERROR = "USER:IMAGE_SAVE_ERROR";
+  private static final String NOT_ALLOWED_APPLY_YOURSELF = "USER:NOT_ALLOWED_APPLY_YOURSELF";
   private static final String USER_ALREADY_FRIEND = "USER:USER_ALREADY_FRIEND";
   private static final String USER_ALREADY_SENT_REQUEST = "USER:USER_ALREADY_SENT_REQUEST";
   private static final String USER_FRIEND_TEMP_NOT_FOUND = "USER:USER_FRIEND_TEMP_NOT_FOUND";
@@ -603,6 +604,11 @@ public class UserService {
     User friend = userRepository.findByUsernameAndLogicDeleteFalse(friendName)
         .orElseThrow(() -> new UserException(USER_NOT_FOUND));
 
+    // 자기 자신에게 요청 오류
+    if (user.equals(friend)) {
+      throw new UserException(NOT_ALLOWED_APPLY_YOURSELF);
+    }
+
     // 이미 친구인 경우 오류
     if (userFriendRepository.fetchByUserAndFriend(user, friend).isPresent()) {
       throw new UserException(USER_ALREADY_FRIEND);
@@ -625,11 +631,13 @@ public class UserService {
     String username = requestDto.getUsername();
     String userUrl = SUB_USER + friendId;
     Long id = requestDto.getId();
+    String avatarImageSmall = requestDto.getAvatarImageSmall();
     // 요청 보내는사람의 정보(id)를 요청받는사람(friendId)에게 보냄
     MessageDto newMessageDto = MessageDto.builder()
         .messageType(MessageType.FRIEND_REQUEST)
         .userId(id)
         .username(username)
+        .avatar(avatarImageSmall)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }

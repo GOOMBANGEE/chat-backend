@@ -26,6 +26,8 @@ public class UserException extends RuntimeException {
       case "USER:IMAGE_INVALID" -> ErrorResponseDto.build(id, "이미지 형식이 올바르지 않습니다");
       case "USER:IMAGE_SAVE_ERROR" -> ErrorResponseDto.build(id, "이미지 저장중 오류가 발생했습니다");
       case "USER:IMAGE_DELETE_ERROR" -> ErrorResponseDto.build(id, "기존 이미지 삭제중 오류가 발생했습니다");
+      case "USER:NOT_ALLOWED_APPLY_YOURSELF" ->
+          ErrorResponseDto.build(id, "자기 자신에게 신청하는것은 허용되지않습니다");
       case "USER:USER_ALREADY_FRIEND" -> ErrorResponseDto.build(id, "이미 등록된 유저입니다");
       case "USER:USER_ALREADY_SENT_REQUEST" -> ErrorResponseDto.build(id, "상대방의 응답을 기다리는중입니다");
       case "USER:USER_FRIEND_TEMP_NOT_FOUND" -> ErrorResponseDto.build(id, "존재하지 않는 요청입니다");
