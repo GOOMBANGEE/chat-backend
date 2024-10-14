@@ -89,20 +89,16 @@ public class ChannelController {
 //    return ResponseEntity.ok(responseDto);
 //  }
 
-  // todo
   // 채널 메시지 읽기처리
-  @PostMapping("/{serverId}/{channelId}/{chatId}/read")
+  @PostMapping("/{channelId}/{chatId}/read")
   public ResponseEntity<EmptyResponseDto> read(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
       @NotNull(message = CHANNEL_INVALID)
       @PathVariable("channelId")
       Long channelId,
       @NotNull(message = CHAT_INVALID)
       @PathVariable("chatId")
       Long chatId) {
-    channelService.read(serverId, channelId, chatId);
+    channelService.read(channelId, chatId);
     return ResponseEntity.ok(null);
   }
 }

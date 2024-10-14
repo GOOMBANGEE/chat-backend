@@ -15,6 +15,7 @@ import com.chat.dto.channel.ChannelCreateResponseDto;
 import com.chat.dto.channel.ChannelRenameRequestDto;
 import com.chat.dto.channel.ChannelSettingRequestDto;
 import com.chat.dto.channel.ChannelSettingResponseDto;
+import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.exception.CategoryException;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ChatException;
@@ -63,6 +64,7 @@ public class ChannelService {
   private static final String NO_CHANNEL_CREATE_PERMISSION = "SERVER:NO_CHANNEL_CREATE_PERMISSION";
   private static final String CHANNEL_NOT_FOUND = "CHANNEL:CHANNEL_NOT_FOUND";
   private static final String CHANNEL_ALREADY_EXIST = "CHANNEL:CHANNEL_ALREADY_EXIST";
+  private static final String CHANNEL_NOT_PARTICIPATED = "CHANNEL:CHANNEL_NOT_PARTICIPATED";
   private static final String CHAT_NOT_FOUND = "CHAT:CHAT_NOT_FOUND";
 
   private final SimpMessagingTemplate messagingTemplate;
@@ -400,20 +402,26 @@ public class ChannelService {
   }
 
   @Transactional
-  public void read(Long serverId, Long channelId, Long chatId) {
+  public void read(Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
-    User user = userRepository
-        .findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    Channel channel = channelRepository
-        .findByIdAndLogicDeleteFalseAndServerId(channelId, serverId)
-        .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationRepository
+        .fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail
+            (null, channelId, email);
+    User user = channelUserRelationInfoDto.getUser();
+    Channel channel = channelUserRelationInfoDto.getChannel();
+    ChannelUserRelation channelUserRelation = channelUserRelationInfoDto.getChannelUserRelation();
+    if (channel == null) {
+      throw new ChannelException(CHANNEL_NOT_FOUND);
+    }
+    if (channelUserRelation == null) {
+      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
+    }
+    if (user == null) {
+      throw new UserException(USER_UNREGISTERED);
+    }
     if (chatRepository.findByIdAndChannelAndLogicDeleteFalse(chatId, channel).isEmpty()) {
       throw new ChatException(CHAT_NOT_FOUND);
     }
-    ChannelUserRelation channelUserRelation = channelUserRelationRepository
-        .findByChannelAndUser(channel, user)
-        .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
 
     channelUserRelation.updateLastReadMessageId(chatId);
     channelUserRelationRepository.save(channelUserRelation);
