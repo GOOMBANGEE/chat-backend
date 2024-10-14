@@ -39,6 +39,8 @@ public class ChannelUserRelation {
 
   private Long lastReadMessageId;
 
+  private boolean subscribe;
+
   @Builder
   public ChannelUserRelation(Long id, Channel channel, User user, User userDirectMessage,
       boolean readMessage, boolean writeMessage, boolean viewHistory, Long lastReadMessageId
@@ -63,5 +65,13 @@ public class ChannelUserRelation {
 
   public User fetchMentionedUserForSendMessage() {
     return this.userDirectMessage;
+  }
+
+  public void subscribe() {
+    this.subscribe = true;
+  }
+
+  public void unsubscribe() {
+    this.subscribe = false;
   }
 }

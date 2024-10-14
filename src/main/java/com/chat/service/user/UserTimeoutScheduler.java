@@ -1,9 +1,11 @@
 package com.chat.service.user;
 
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.user.UserAndServerIdForTimeoutCheckDto;
+import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -26,6 +28,7 @@ public class UserTimeoutScheduler {
 
   private static final Duration TIMEOUT = Duration.ofMinutes(30);
   private static final String SUB_SERVER = "/sub/server/";
+  private final ChannelUserRelationRepository channelUserRelationRepository;
 
   // 1분 마다 타임아웃된 유저를 체크
   @Scheduled(fixedRate = 60 * 1000)
@@ -40,7 +43,13 @@ public class UserTimeoutScheduler {
     List<User> userList = timeoutDtoList.stream()
         .map(UserAndServerIdForTimeoutCheckDto::getUser)
         .distinct().toList();
-    userList.forEach(User::updateOffline);
+    userList.forEach(user -> {
+      user.updateOffline();
+      List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+          .fetchChannelUserRelationListBySubscribeTrueAndUser(user);
+      channelUserRelationList.forEach(ChannelUserRelation::unsubscribe);
+      channelUserRelationRepository.saveAll(channelUserRelationList);
+    });
     userRepository.saveAll(userList);
 
     // 유저id를 기준으로 서버id리스트로 묶어줌

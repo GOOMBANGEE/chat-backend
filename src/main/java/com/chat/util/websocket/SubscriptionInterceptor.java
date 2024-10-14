@@ -1,6 +1,7 @@
 package com.chat.util.websocket;
 
 
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
@@ -143,10 +144,11 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
 
     // 기존방식 -> 특정유저, 특정역할에 대해서 검색
     // 개선방안 -> ChannelUserRelation에 모든 채널-유저 정보가 담겨있어서 해당 엔티티가 존재하는지 검색
-    if (channelUserRelationRepository
+
+    ChannelUserRelation channelUserRelation = channelUserRelationRepository
         .fetchChannelUserRelationByChannelIdAndUserId(channelId, userIdFromToken)
-        .isEmpty()) {
-      throw new ChannelException(CHANNEL_NOT_PARTICIPATED);
-    }
+        .orElseThrow(() -> new ChannelException(CHANNEL_NOT_PARTICIPATED));
+    channelUserRelation.subscribe();
+    channelUserRelationRepository.save(channelUserRelation);
   }
 }

@@ -1,7 +1,9 @@
 package com.chat.util.websocket;
 
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.dto.MessageQueueInitializeDto;
 import com.chat.repository.channel.ChannelRepository;
+import com.chat.repository.channel.ChannelUserRelationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class SimpleBrokerChannelActivator {
 
   private final ChannelRepository channelRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
@@ -27,6 +30,10 @@ public class SimpleBrokerChannelActivator {
     log.info("채널재시작 -> pub ALL CHANNEL dummy message");
 
     List<MessageQueueInitializeDto> messageQueueInitializeDtoList = channelRepository.fetchMessageQueueInitializeDtoList();
+
+    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository.findBySubscribeTrue();
+    channelUserRelationList.forEach(ChannelUserRelation::unsubscribe);
+    channelUserRelationRepository.saveAll(channelUserRelationList);
 
     messageQueueInitializeDtoList.forEach(dto -> {
       Long serverId = dto.getServerId();

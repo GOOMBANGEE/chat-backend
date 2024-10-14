@@ -30,4 +30,6 @@ public interface ChannelUserRelationRepositoryCustom {
   // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
   // channel eq, user online true
   List<Long> fetchUserIdListWhoConnectedButNotSubscribe(Channel channel);
+
+  List<ChannelUserRelation> fetchChannelUserRelationListBySubscribeTrueAndUser(User user);
 }

@@ -34,6 +34,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         ))
         .from(qNotification)
         .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email))
+        .orderBy(qNotification.id.desc())
         .limit(10)
         .fetch();
   }
@@ -57,6 +58,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         ))
         .from(qNotification)
         .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email))
+        .orderBy(qNotification.id.desc())
         .limit(10)
         .fetch();
   }

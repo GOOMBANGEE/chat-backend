@@ -155,11 +155,28 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
     return queryFactory
         .select(qChannelUserRelation.user.id)
         .from(qChannelUserRelation)
-        .where(channelEq(channel), userOnlineTrue())
+        .where(channelEq(channel), subscribeFalse(), userOnlineTrue())
         .fetch();
+  }
+
+  private BooleanExpression subscribeFalse() {
+    return qChannelUserRelation.subscribe.isFalse();
   }
 
   private BooleanExpression userOnlineTrue() {
     return qChannelUserRelation.user.online.isTrue();
+  }
+
+  @Override
+  public List<ChannelUserRelation> fetchChannelUserRelationListBySubscribeTrueAndUser(User user) {
+    return queryFactory
+        .select(qChannelUserRelation)
+        .from(qChannelUserRelation)
+        .where(userEq(user), subscribeTrue())
+        .fetch();
+  }
+
+  private BooleanExpression subscribeTrue() {
+    return qChannelUserRelation.subscribe.isTrue();
   }
 }
