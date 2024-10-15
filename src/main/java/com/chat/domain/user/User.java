@@ -1,6 +1,7 @@
 package com.chat.domain.user;
 
 import com.chat.dto.user.ProfileResponseDto;
+import com.chat.dto.user.UserInfoForDirectMessageChannelCreateDto;
 import com.chat.dto.user.UserInfoForServerJoinResponseDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -174,5 +175,13 @@ public class User {
 
   public String fetchAvatarForSendMessageResponse() {
     return this.avatarImageSmall;
+  }
+
+  public UserInfoForDirectMessageChannelCreateDto fetchUserInfoForDirectMessageChannelCreate() {
+    return UserInfoForDirectMessageChannelCreateDto.builder()
+        .userId(this.id)
+        .username(this.username)
+        .avatarImageSmall(this.avatarImageSmall)
+        .build();
   }
 }

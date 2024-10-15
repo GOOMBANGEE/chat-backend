@@ -16,6 +16,8 @@ import com.chat.dto.channel.ChannelRenameRequestDto;
 import com.chat.dto.channel.ChannelSettingRequestDto;
 import com.chat.dto.channel.ChannelSettingResponseDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
+import com.chat.dto.channel.DirectMessageChannelCreateResponseDto;
+import com.chat.dto.user.UserInfoForDirectMessageChannelCreateDto;
 import com.chat.exception.CategoryException;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ChatException;
@@ -47,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChannelService {
 
   private final CustomUserDetailsService customUserDetailsService;
-  private final UserRepository userRepository;
   private final ServerRepository serverRepository;
   private final ServerRoleRepository serverRoleRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
@@ -56,6 +57,8 @@ public class ChannelService {
   private final ChannelRepository channelRepository;
   private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChatRepository chatRepository;
+  private final UserRepository userRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -71,7 +74,6 @@ public class ChannelService {
   private static final String SUB_SERVER = "/sub/server/";
   private static final String SUB_USER = "/sub/user/";
   private final ObjectMapper mapper = new ObjectMapper();
-  private final ChatRepository chatRepository;
 
 
   @Transactional
@@ -124,18 +126,29 @@ public class ChannelService {
 
       channelUserRelationRepository.saveAll(channelUserRelationList);
       Long channelId = channel.getChannelIdForChannelCreate();
+      UserInfoForDirectMessageChannelCreateDto userInfo = user.fetchUserInfoForDirectMessageChannelCreate();
+      UserInfoForDirectMessageChannelCreateDto mentionedUserInfo = mentionedUser.fetchUserInfoForDirectMessageChannelCreate();
+      DirectMessageChannelCreateResponseDto stompResponseDto = DirectMessageChannelCreateResponseDto.builder()
+          .id(channelId)
+          .userId(userInfo.getUserId())
+          .username(userInfo.getUsername())
+          .avatar(userInfo.getAvatarImageSmall())
+          .build();
 
       // dm 받는 유저에게 채널생성알림
       String userUrl = SUB_USER + userId;
       MessageDto newMessageDto = MessageDto.builder()
           .messageType(MessageType.CHANNEL_CREATE_DIRECT_MESSAGE)
-          .channelId(channelId)
+          .message(mapper.writeValueAsString(stompResponseDto))
           .build();
       messagingTemplate.convertAndSend(userUrl, newMessageDto);
 
+      // dm채널 생성유저에게 dm받는 유저의 정보 제공
       return ChannelCreateResponseDto.builder()
           .id(channelId)
-          .userDirectMessageId(userId)
+          .mentionedUserId(mentionedUserInfo.getUserId())
+          .mentionedUsername(mentionedUserInfo.getUsername())
+          .mentionedUserAvatar(mentionedUserInfo.getAvatarImageSmall())
           .build();
     } else {
       Server server = serverRepository

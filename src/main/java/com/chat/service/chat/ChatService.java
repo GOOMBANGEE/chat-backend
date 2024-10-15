@@ -71,12 +71,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class ChatService {
 
   private final CustomUserDetailsService customUserDetailsService;
-  private final UserRepository userRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
   private final ChannelRepository channelRepository;
-  private final ChatRepository chatRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChatRepository chatRepository;
   private final NotificationRepository notificationRepository;
+  private final UserRepository userRepository;
   private final UUIDGenerator uuidGenerator;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";

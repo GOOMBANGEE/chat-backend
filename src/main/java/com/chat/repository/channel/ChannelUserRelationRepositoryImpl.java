@@ -92,8 +92,7 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
             qChannelUserRelation.channel.server.id,
             qChannelUserRelation.channel.category.id,
             qChannelUserRelation.lastReadMessageId,
-            qChannelUserRelation.channel.lastMessageId,
-            qChannelUserRelation.userDirectMessage.id))
+            qChannelUserRelation.channel.lastMessageId))
         .from(qChannelUserRelation)
         .where(userEq(user), logicDeleteFalse())
         .fetch();
@@ -105,6 +104,25 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private BooleanExpression logicDeleteFalse() {
     return qChannelUserRelation.channel.logicDelete.isFalse();
+  }
+
+  @Override
+  public List<ChannelInfoDto> fetchDirectMessageChannelInfoDtoListByUser(User user) {
+    return queryFactory
+        .select(new QChannelInfoDto(
+            qChannelUserRelation.channel.id,
+            qChannelUserRelation.channel.name,
+            qChannelUserRelation.channel.displayOrder,
+            qChannelUserRelation.channel.server.id,
+            qChannelUserRelation.channel.category.id,
+            qChannelUserRelation.lastReadMessageId,
+            qChannelUserRelation.channel.lastMessageId,
+            qChannelUserRelation.userDirectMessage.id,
+            qChannelUserRelation.userDirectMessage.username,
+            qChannelUserRelation.userDirectMessage.avatarImageSmall))
+        .from(qChannelUserRelation)
+        .where(userEq(user), logicDeleteFalse())
+        .fetch();
   }
 
   @Override

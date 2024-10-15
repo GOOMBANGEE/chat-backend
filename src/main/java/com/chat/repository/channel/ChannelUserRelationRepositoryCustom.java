@@ -19,6 +19,8 @@ public interface ChannelUserRelationRepositoryCustom {
 
   List<ChannelInfoDto> fetchChannelInfoDtoListByUser(User user);
 
+  List<ChannelInfoDto> fetchDirectMessageChannelInfoDtoListByUser(User user);
+
   List<User> fetchUserListByChannel(Channel channel);
 
   List<ChannelUserRelation> fetchChannelUserRelationListByServerAndUser

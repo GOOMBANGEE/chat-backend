@@ -703,12 +703,14 @@ public class UserService {
     // friendId -> 요청 신청했던 유저
     Long id = requestDto.getId();
     String username = requestDto.getUsername();
+    String avatar = requestDto.getAvatar();
     String userUrl = SUB_USER + friendId;
     // 요청 수락한 유저(id)의 정보를 요청 신청했던유저(friendId)가 받아서 상태갱신
     MessageDto newMessageDto = MessageDto.builder()
         .messageType(MessageType.FRIEND_ACCEPT)
         .userId(id)
         .username(username)
+        .avatar(avatar)
         .build();
     messagingTemplate.convertAndSend(userUrl, newMessageDto);
   }

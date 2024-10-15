@@ -223,10 +223,14 @@ public class ServerService {
     List<ChannelInfoDto> channelInfoDtoList = channelUserRelationRepository
         .fetchChannelInfoDtoListByUser(user);
 
+    List<ChannelInfoDto> directMessageChannelInfoDtoList = channelUserRelationRepository
+        .fetchDirectMessageChannelInfoDtoListByUser(user);
+
     return ServerListResponseDto.builder()
         .serverList(serverInfoDtoList)
         .categoryList(categoryInfoDtoList)
         .channelList(channelInfoDtoList)
+        .directMessageChannelList(directMessageChannelInfoDtoList)
         .build();
   }
 

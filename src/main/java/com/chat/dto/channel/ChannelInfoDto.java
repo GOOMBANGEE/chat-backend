@@ -25,11 +25,27 @@ public class ChannelInfoDto {
   private Long lastMessageId;
 
   private Long userDirectMessageId;
+  private String username;
+  private String avatarImageSmall;
 
   @QueryProjection
   @Builder
   public ChannelInfoDto(Long id, String name, Double displayOrder, Long serverId, Long categoryId,
-      Long lastReadMessageId, Long lastMessageId, Long userDirectMessageId) {
+      Long lastReadMessageId, Long lastMessageId) {
+    this.id = id;
+    this.name = name;
+    this.displayOrder = displayOrder;
+    this.serverId = serverId;
+    this.categoryId = categoryId;
+    this.lastReadMessageId = lastReadMessageId;
+    this.lastMessageId = lastMessageId;
+  }
+
+  @QueryProjection
+  @Builder
+  public ChannelInfoDto(Long id, String name, Double displayOrder, Long serverId, Long categoryId,
+      Long lastReadMessageId, Long lastMessageId,
+      Long userDirectMessageId, String username, String avatarImageSmall) {
     this.id = id;
     this.name = name;
     this.displayOrder = displayOrder;
@@ -38,5 +54,7 @@ public class ChannelInfoDto {
     this.lastReadMessageId = lastReadMessageId;
     this.lastMessageId = lastMessageId;
     this.userDirectMessageId = userDirectMessageId;
+    this.username = username;
+    this.avatarImageSmall = avatarImageSmall;
   }
 }

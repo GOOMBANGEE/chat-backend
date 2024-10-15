@@ -18,11 +18,14 @@ public class ServerListResponseDto {
 
   private List<ChannelInfoDto> channelList;
 
+  private List<ChannelInfoDto> directMessageChannelList;
+
   @Builder
   public ServerListResponseDto(List<ServerInfoDto> serverList, List<CategoryInfoDto> categoryList,
-      List<ChannelInfoDto> channelList) {
+      List<ChannelInfoDto> channelList, List<ChannelInfoDto> directMessageChannelList) {
     this.serverList = serverList;
     this.categoryList = categoryList;
     this.channelList = channelList;
+    this.directMessageChannelList = directMessageChannelList;
   }
 }
