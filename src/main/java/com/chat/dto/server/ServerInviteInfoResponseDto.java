@@ -11,13 +11,16 @@ public class ServerInviteInfoResponseDto {
 
   private String name;
 
+  private String icon;
+
   private String username;
 
   private Long userCount;
 
   @Builder
-  public ServerInviteInfoResponseDto(String name, String username, Long userCount) {
+  public ServerInviteInfoResponseDto(String name, String icon, String username, Long userCount) {
     this.name = name;
+    this.icon = icon;
     this.username = username;
     this.userCount = userCount;
   }

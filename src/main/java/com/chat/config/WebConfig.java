@@ -24,6 +24,8 @@ public class WebConfig implements WebMvcConfigurer {
   @Value("#{'${server.cors-urls}'.split(',')}")
   private List<String> corsUrlList;
 
+  @Value("${server.file-path.server.icon}")
+  private String filePathServerIcon;
   @Value("${server.file-path.base}")
   private String filePathBase;
   @Value("${server.file-path.chat.audio}")
@@ -47,6 +49,7 @@ public class WebConfig implements WebMvcConfigurer {
 
   @PostConstruct
   public void initFilePaths() {
+    filePaths.put("icon", filePathServerIcon);
     filePaths.put("audio", filePathChatAudio);
     filePaths.put("image", filePathChatImage);
     filePaths.put("text", filePathChatText);

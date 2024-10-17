@@ -71,7 +71,8 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return queryFactory
         .select(new QServerInfoDto(
             qServerUserRelation.server.id,
-            qServerUserRelation.server.name))
+            qServerUserRelation.server.name,
+            qServerUserRelation.server.icon))
         .from(qServerUserRelation)
         .join(qServerUserRelation.server, qServer)
         .where(userEq(user), serverDeleteFalse(), logicDeleteFalse())
@@ -119,6 +120,16 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   public List<User> fetchUserListByServer(Server server) {
     return queryFactory
         .select(qServerUserRelation.user)
+        .from(qServerUserRelation)
+        .where(serverEq(server), serverDeleteFalse(), logicDeleteFalse())
+        .fetch();
+  }
+
+  // serverIcon 배포용 server참가자 id list
+  @Override
+  public List<Long> fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(Server server) {
+    return queryFactory
+        .select(qServerUserRelation.user.id)
         .from(qServerUserRelation)
         .where(serverEq(server), serverDeleteFalse(), logicDeleteFalse())
         .fetch();

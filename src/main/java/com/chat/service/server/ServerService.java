@@ -22,6 +22,7 @@ import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinInfoDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
+import com.chat.dto.server.ServerSettingIconRequestDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
@@ -37,16 +38,25 @@ import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
+import com.chat.util.UUIDGenerator;
 import com.chat.util.websocket.StompAfterCommitSynchronization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -76,7 +86,10 @@ public class ServerService {
   private static final String SERVER_NOT_PERMITTED = "SERVER:SERVER_NOT_PERMITTED";
   private static final String SERVER_ALREADY_JOINED = "SERVER:SERVER_ALREADY_JOINED";
   private static final String SERVER_NOT_EMPTY = "SERVER:SERVER_NOT_EMPTY";
+  private static final String UNSUPPORTED_FILE_TYPE = "SERVER:UNSUPPORTED_FILE_TYPE";
+  private static final String IMAGE_SAVE_ERROR = "SERVER:IMAGE_SAVE_ERROR";
 
+  private final UUIDGenerator uuidGenerator;
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_USER = "/sub/user/";
   private static final String SUB_SERVER = "/sub/server/";
@@ -85,11 +98,15 @@ public class ServerService {
 
   @Value("${server.front-url}")
   private String frontUrl;
+  @Value("${server.file-path.server.icon}")
+  private String filePathServerIcon;
+  @Value("${server.time-zone}")
+  private String timeZone;
 
   // 서버 생성
   @Transactional
   public ServerCreateResponseDto create(
-      ServerCreateRequestDto requestDto) {
+      ServerCreateRequestDto requestDto) throws IOException {
     // 등록된 유저인지 확인
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -98,9 +115,13 @@ public class ServerService {
     // 서버 생성
     String username = requestDto.getUsername();
     String name = requestDto.getName();
+    String icon = requestDto.getIcon();
+
+    String iconFilePath = this.serverIconScaling(icon);
 
     Server server = Server.builder()
         .name(name)
+        .icon(iconFilePath)
         .ownerUsername(username)
         .userCount(1L)
         .logicDelete(false)
@@ -196,6 +217,7 @@ public class ServerService {
     return ServerCreateResponseDto.builder()
         .id(id)
         .name(name)
+        .icon(iconFilePath)
         .categoryId(categoryId)
         .categoryName("채팅 채널")
         .categoryDisplayOrder(1024.0)
@@ -265,7 +287,7 @@ public class ServerService {
           .name(name)
           .build();
       MessageDto newMessageDto = MessageDto.builder()
-          .messageType(MessageType.SERVER_UPDATE)
+          .messageType(MessageType.SERVER_UPDATE_NAME)
           .serverId(serverId)
           .message(mapper.writeValueAsString(serverInfoDto))
           .build();
@@ -273,6 +295,105 @@ public class ServerService {
       return;
     }
     throw new ServerException(SERVER_NOT_PERMITTED);
+  }
+
+  // 서버 아이콘 변경
+  @Transactional
+  public void settingIcon(Long serverId, ServerSettingIconRequestDto requestDto)
+      throws IOException {
+    String email = customUserDetailsService.getEmailByUserDetails();
+
+    // 해당 서버 참여자인지 확인
+    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
+        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+
+    Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
+
+    // 서버의 주인인지 확인
+    ServerUserRelation serverUserRelation = serverUserRelationRepository
+        .findByUserAndServerAndLogicDeleteFalse(user, server)
+        .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
+
+    // 주인이 아닌경우 권한없음
+    if (serverUserRelation.isOwner()) {
+      String icon = requestDto.getIcon();
+      String filePath = this.serverIconScaling(icon);
+      server.changeServerIcon(filePath);
+      serverRepository.save(server);
+
+      // stomp pub
+      ServerInfoDto serverInfoDto = ServerInfoDto.builder()
+          .id(serverId)
+          .icon(filePath)
+          .build();
+      MessageDto newMessageDto = MessageDto.builder()
+          .messageType(MessageType.SERVER_UPDATE_ICON)
+          .serverId(serverId)
+          .message(mapper.writeValueAsString(serverInfoDto))
+          .build();
+
+      List<Long> userIdList = serverUserRelationRepository
+          .fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(server);
+      userIdList.forEach(userId -> {
+        String userUrl = SUB_USER + userId;
+        TransactionSynchronizationManager.registerSynchronization(
+            new StompAfterCommitSynchronization(messagingTemplate, userUrl, newMessageDto)
+        );
+      });
+
+      return;
+    }
+    throw new ServerException(SERVER_NOT_PERMITTED);
+  }
+
+  private String serverIconScaling(String icon) throws IOException {
+    String[] base64 = icon.split(",");
+    String metadata = base64[0];
+    String base64Data = base64[1];
+    String mimeType = metadata.split(":")[1].split(";")[0];
+
+    // 이미지 확장자 추출
+    String extension = getFileExtensionFromMimeType(mimeType);
+    if (extension == null) {
+      throw new ServerException(UNSUPPORTED_FILE_TYPE);
+    }
+
+    // base64 데이터를 바이트 배열로 디코딩
+    byte[] decode = Base64.getDecoder().decode(base64Data);
+
+    // 현재 시간 millisecond
+    ZoneId zoneid = ZoneId.of(timeZone);
+    long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
+
+    String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
+    String filePath = filePathServerIcon + fileName;
+
+    BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
+
+    try {
+      // 이미지 스케일링 후 저장 (작은 이미지)
+      Thumbnails.of(originalImage)
+          .size(56, 56)
+          .toFile(new File(filePath));
+    } catch (IOException e) {
+      throw new ServerException(IMAGE_SAVE_ERROR);
+    }
+
+    return filePath;
+  }
+
+  // base64 문자열에서 이미지 확장자 추출
+  private String getFileExtensionFromMimeType(String mimeType) {
+    if (mimeType.startsWith("image/jpeg")) {
+      return "jpg";
+    } else if (mimeType.startsWith("image/png")) {
+      return "png";
+    } else if (mimeType.startsWith("image/gif")) {
+      return "gif";
+    } else {
+      return null;  // 지원하지 않는 파일 형식
+    }
   }
 
   // 서버 입장
@@ -425,8 +546,6 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    // todo role check
-    // 현재는 참여자확인만 이루어짐
     Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
@@ -478,8 +597,6 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    // todo role check
-    // 현재는 참여자확인만 이루어짐
     Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 

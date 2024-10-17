@@ -11,6 +11,7 @@ public class ServerCreateResponseDto {
 
   private Long id;
   private String name;
+  private String icon;
 
   private Long categoryId;
   private String categoryName;
@@ -21,10 +22,12 @@ public class ServerCreateResponseDto {
   private Double channelDisplayOrder;
 
   @Builder
-  public ServerCreateResponseDto(Long id, String name, Long categoryId, String categoryName,
-      Double categoryDisplayOrder, Long channelId, String channelName, Double channelDisplayOrder) {
+  public ServerCreateResponseDto(Long id, String name, String icon,
+      Long categoryId, String categoryName, Double categoryDisplayOrder,
+      Long channelId, String channelName, Double channelDisplayOrder) {
     this.id = id;
     this.name = name;
+    this.icon = icon;
     this.categoryId = categoryId;
     this.categoryName = categoryName;
     this.categoryDisplayOrder = categoryDisplayOrder;

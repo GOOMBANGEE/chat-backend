@@ -15,10 +15,13 @@ public class ServerCreateRequestDto {
 
   private String name;
 
+  private String icon;
+
   @Builder
-  public ServerCreateRequestDto(Long userId, String username, String name) {
+  public ServerCreateRequestDto(Long userId, String username, String name, String icon) {
     this.userId = userId;
     this.username = username;
     this.name = name;
+    this.icon = icon;
   }
 }

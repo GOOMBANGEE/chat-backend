@@ -8,12 +8,14 @@ import com.chat.dto.server.ServerInviteInfoResponseDto;
 import com.chat.dto.server.ServerInviteResponseDto;
 import com.chat.dto.server.ServerJoinResponseDto;
 import com.chat.dto.server.ServerListResponseDto;
+import com.chat.dto.server.ServerSettingIconRequestDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.service.server.ServerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +38,7 @@ public class ServerController {
   // 서버 생성
   @PostMapping("/create")
   public ResponseEntity<ServerCreateResponseDto> create(
-      @RequestBody @Valid ServerCreateRequestDto requestDto) {
+      @RequestBody @Valid ServerCreateRequestDto requestDto) throws IOException {
     ServerCreateResponseDto responseDto = serverService.create(requestDto);
     return ResponseEntity.ok()
         .body(responseDto);
@@ -61,6 +63,16 @@ public class ServerController {
     return ResponseEntity.ok(null);
   }
 
+  // 서버 설정변경
+  @PostMapping("/{serverId}/setting/icon")
+  public ResponseEntity<EmptyResponseDto> settingIcon(
+      @NotNull(message = SERVER_INVALID)
+      @PathVariable("serverId")
+      Long serverId,
+      @RequestBody @Valid ServerSettingIconRequestDto requestDto) throws IOException {
+    serverService.settingIcon(serverId, requestDto);
+    return ResponseEntity.ok(null);
+  }
 
   // 서버 입장
   @PostMapping("/{code}/join")

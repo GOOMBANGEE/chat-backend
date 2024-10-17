@@ -24,6 +24,8 @@ public class Server {
 
   private String name;
 
+  private String icon;
+
   private String code;
 
   private String ownerUsername;
@@ -37,8 +39,10 @@ public class Server {
   private Channel defaultChannel;
 
   @Builder
-  public Server(String name, String ownerUsername, Long userCount, boolean logicDelete) {
+  public Server(String name, String icon, String ownerUsername, Long userCount,
+      boolean logicDelete) {
     this.name = name;
+    this.icon = icon;
     this.ownerUsername = ownerUsername;
     this.userCount = userCount;
     this.logicDelete = logicDelete;
@@ -56,10 +60,15 @@ public class Server {
     this.name = newName;
   }
 
+  public void changeServerIcon(String newIcon) {
+    this.icon = newIcon;
+  }
+
   public ServerJoinResponseDto getServerIdForServerJoinResponse(Long channelId) {
     return ServerJoinResponseDto.builder()
         .id(this.id)
         .name(this.name)
+        .icon(this.icon)
         .channelId(channelId)
         .build();
   }
@@ -67,6 +76,7 @@ public class Server {
   public ServerInviteInfoResponseDto buildServerInviteInfoResponseDto() {
     return ServerInviteInfoResponseDto.builder()
         .name(this.name)
+        .icon(this.icon)
         .username(this.ownerUsername)
         .userCount(this.userCount)
         .build();

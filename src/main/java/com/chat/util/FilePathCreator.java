@@ -15,6 +15,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FilePathCreator {
 
+  @Value("${server.file-path.server.icon}")
+  private String filePathServerIcon;
+
   @Value("${server.file-path.chat.audio}")
   private String filePathChatAudio;
   @Value("${server.file-path.chat.image}")
@@ -37,6 +40,7 @@ public class FilePathCreator {
   public void onApplicationEvent() throws IOException {
 
     List<String> pathList = Arrays.asList(
+        filePathServerIcon,
         filePathChatAudio,
         filePathChatImage,
         filePathChatText,

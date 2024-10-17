@@ -508,7 +508,7 @@ public class UserService {
     try {
       // 이미지 스케일링 후 저장 (작은 이미지)
       Thumbnails.of(originalImage)
-          .size(32, 32)
+          .size(48, 48)
           .toFile(new File(filePathSmall));
 
       // 이미지 스케일링 후 저장 (큰 이미지)

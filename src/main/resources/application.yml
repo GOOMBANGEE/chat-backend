@@ -6,6 +6,9 @@ server:
   pepper: ${SERVER_PEPPER}
   file-path:
     base: ${SERVER_FILE_PATH_BASE}
+    server:
+      base: /server
+      icon: ${server.file-path.server.base}/icon/
     chat:
       base: /chat
       audio: ${server.file-path.chat.base}/audio/

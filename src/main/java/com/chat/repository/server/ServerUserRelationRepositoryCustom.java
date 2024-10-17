@@ -26,4 +26,6 @@ public interface ServerUserRelationRepositoryCustom {
       User user);
 
   List<User> fetchUserListByServer(Server server);
+
+  List<Long> fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(Server server);
 }

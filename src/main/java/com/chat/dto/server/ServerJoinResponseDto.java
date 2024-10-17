@@ -13,12 +13,15 @@ public class ServerJoinResponseDto {
 
   private String name;
 
+  private String icon;
+
   private Long channelId;
 
   @Builder
-  public ServerJoinResponseDto(Long id, String name, Long channelId) {
+  public ServerJoinResponseDto(Long id, String name, String icon, Long channelId) {
     this.id = id;
     this.name = name;
+    this.icon = icon;
     this.channelId = channelId;
   }
 }
