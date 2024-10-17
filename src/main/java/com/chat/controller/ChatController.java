@@ -83,12 +83,11 @@ public class ChatController {
     return ResponseEntity.ok(null);
   }
 
-  // todo 수정필요
-  @PostMapping("/{serverId}/search")
+  @PostMapping("/{channelId}/search")
   public ResponseEntity<ChatSearchResponseDto> search(
-      @NotNull(message = SERVER_INVALID)
-      @PathVariable("serverId")
-      Long serverId,
+      @NotNull(message = CHANNEL_INVALID)
+  @PathVariable("channelId")
+  Long channelId,
       @NotNull(message = PAGE_INVALID)
       @Min(value = 1, message = PAGE_INVALID)
       @RequestParam(defaultValue = "1")
@@ -96,7 +95,7 @@ public class ChatController {
       @RequestParam(defaultValue = "20")
       int size,
       @RequestBody @Valid ChatSearchRequestDto requestDto) {
-    ChatSearchResponseDto responseDto = chatService.search(serverId, requestDto, page, size);
+    ChatSearchResponseDto responseDto = chatService.search(channelId, requestDto, page, size);
     return ResponseEntity.ok(responseDto);
   }
 }

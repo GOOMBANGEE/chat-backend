@@ -529,47 +529,39 @@ public class ChatService {
     messagingTemplate.convertAndSend(channelUrl, newMessageDto);
   }
 
-  // todo 수정필요
-  public ChatSearchResponseDto search(Long serverId, ChatSearchRequestDto requestDto, int page,
-      int size) {
+  public ChatSearchResponseDto search(Long channelId, ChatSearchRequestDto requestDto,
+      int page, int size) {
+    String email = customUserDetailsService.getEmailByUserDetails();
     String keyword = requestDto.getKeyword();
     String username = requestDto.getUsername();
     String message = requestDto.getMessage();
 
-    // 서버유저인지 검증
-    String email = customUserDetailsService.getEmailByUserDetails();
-
-    // 해당 서버,채널 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    // todo role check
-    // 현재는 참여자확인만 이루어짐
-    if (serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId).isEmpty()) {
-      throw new ServerException(SERVER_NOT_FOUND);
-    }
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = this.validChannelUserRelation(null,
+        channelId, email);
+    Channel channel = channelUserRelationInfoDto.getChannel();
 
     Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Direction.DESC, "id"));
     Page<ChatInfoDto> chatPage = null;
 
     if (!isEmpty(keyword)) {
       // 검색 기본쿼리
-      chatPage = chatRepository.searchChatInfoDtoListDefault(serverId, keyword, pageable);
+      chatPage = chatRepository.searchChatInfoDtoListDefault(channel, keyword, pageable);
     }
 
     if (isEmpty(keyword) && !isEmpty(username) && !isEmpty(message)) {
       // 둘을 검색하는 쿼리
-      chatPage = chatRepository.searchChatInfoDtoListByUsernameAndMessage(serverId, username,
+      chatPage = chatRepository.searchChatInfoDtoListByUsernameAndMessage(channel, username,
           message, pageable);
     }
 
     if (isEmpty(keyword) && !isEmpty(username) && isEmpty(message)) {
       // 유저명으로만 검색
-      chatPage = chatRepository.searchChatInfoDtoListByUsername(serverId, username, pageable);
+      chatPage = chatRepository.searchChatInfoDtoListByUsername(channel, username, pageable);
     }
 
     if (isEmpty(keyword) && isEmpty(username) && !isEmpty(message)) {
       // 내용만으로 검색
-      chatPage = chatRepository.searchChatInfoDtoListByMessage(serverId, message, pageable);
+      chatPage = chatRepository.searchChatInfoDtoListByMessage(channel, message, pageable);
     }
 
     assert chatPage != null;

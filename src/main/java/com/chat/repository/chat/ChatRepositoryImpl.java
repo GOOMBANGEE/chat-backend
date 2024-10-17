@@ -4,7 +4,6 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 
 import com.chat.domain.channel.Channel;
 import com.chat.domain.chat.QChat;
-import com.chat.domain.server.QServer;
 import com.chat.domain.user.QUser;
 import com.chat.dto.chat.ChatInfoDto;
 import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
@@ -24,7 +23,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
 
   private final JPAQueryFactory queryFactory;
 
-  QServer qServer = QServer.server;
   QChat qChat = QChat.chat;
   QChat qChatReference = new QChat("qChatReference");
   QUser qUser = QUser.user;
@@ -68,10 +66,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return isEmpty(channelId) ? null : qChat.channel.id.eq(channelId);
   }
 
-  private BooleanExpression serverIdEq(Long serverId) {
-    return isEmpty(serverId) ? null : qServer.id.eq(serverId);
-  }
-
   private BooleanExpression chatDeleteFalse() {
     return qChat.logicDelete.eq(Boolean.FALSE);
   }
@@ -92,14 +86,16 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   }
 
   @Override
-  public Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword,
+  public Page<ChatInfoDto> searchChatInfoDtoListDefault(Channel channel, String keyword,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(keyword),
             chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(qChat.id.desc())
@@ -108,9 +104,11 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     JPAQuery<ChatInfoDto> countQuery = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(keyword),
-            chatDeleteFalse());
+            chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser);
 
     return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetch().size());
   }
@@ -121,14 +119,16 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   }
 
   @Override
-  public Page<ChatInfoDto> searchChatInfoDtoListByUsername(Long serverId, String username,
+  public Page<ChatInfoDto> searchChatInfoDtoListByUsername(Channel channel, String username,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListByUsernameOption(username),
             chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(qChat.id.desc())
@@ -137,9 +137,11 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     JPAQuery<ChatInfoDto> countQuery = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(username),
-            chatDeleteFalse());
+            chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser);
 
     return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetch().size());
   }
@@ -149,14 +151,16 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   }
 
   @Override
-  public Page<ChatInfoDto> searchChatInfoDtoListByMessage(Long serverId, String message,
+  public Page<ChatInfoDto> searchChatInfoDtoListByMessage(Channel channel, String message,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListByMessageOption(message),
             chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(qChat.id.desc())
@@ -165,9 +169,11 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     JPAQuery<ChatInfoDto> countQuery = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(message),
-            chatDeleteFalse());
+            chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser);
 
     return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetch().size());
   }
@@ -177,14 +183,17 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   }
 
   @Override
-  public Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Long serverId, String username,
+  public Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Channel channel,
+      String username,
       String message, Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListByUsernameAndMessageOption(username, message),
             chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(qChat.id.desc())
@@ -193,9 +202,11 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     JPAQuery<ChatInfoDto> countQuery = queryFactory
         .select(chatInfoDtoProjection())
         .from(qChat)
-        .where(serverIdEq(serverId),
+        .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(username),
-            chatDeleteFalse());
+            chatDeleteFalse())
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser);
 
     return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetch().size());
   }

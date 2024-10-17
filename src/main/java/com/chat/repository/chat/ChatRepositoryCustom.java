@@ -14,15 +14,17 @@ public interface ChatRepositoryCustom {
 
   List<ChatInfoDto> fetchChatInfoDtoListByChannelIdAndChatId(Long channelId, Long chatId);
 
-  Page<ChatInfoDto> searchChatInfoDtoListDefault(Long serverId, String keyword, Pageable pageable);
 
-  Page<ChatInfoDto> searchChatInfoDtoListByUsername(Long serverId, String keyword,
+  Page<ChatInfoDto> searchChatInfoDtoListDefault(Channel channel, String keyword,
       Pageable pageable);
 
-  Page<ChatInfoDto> searchChatInfoDtoListByMessage(Long serverId, String message,
+  Page<ChatInfoDto> searchChatInfoDtoListByUsername(Channel channel, String username,
       Pageable pageable);
 
-  Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Long serverId, String username,
+  Page<ChatInfoDto> searchChatInfoDtoListByMessage(Channel channel, String message,
+      Pageable pageable);
+
+  Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Channel channel, String username,
       String message, Pageable pageable);
 
   ChatReferenceInfoForSendMessageResponse fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(
