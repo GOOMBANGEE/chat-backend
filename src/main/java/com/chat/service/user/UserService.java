@@ -167,7 +167,7 @@ public class UserService {
     validEmailDuplicate(email);
     validUsernameDuplicate(username);
 
-    LocalDateTime registerDate = LocalDateTime.now();
+    LocalDateTime registerDate = LocalDateTime.now(ZoneId.of(timeZone));
     String token = uuidGenerator.generateUUID();
 
     Role role = Role.builder()
@@ -286,7 +286,7 @@ public class UserService {
           userId);
 
       // 유저 온라인표시
-      LocalDateTime lastLogin = LocalDateTime.now();
+      LocalDateTime lastLogin = LocalDateTime.now(ZoneId.of(timeZone));
       user.updateOnline(lastLogin);
       userRepository.save(user);
       // 해당 유저가 속한 서버에 온라인메시지발송
@@ -317,7 +317,7 @@ public class UserService {
     Long userIdFromToken = tokenProvider.getUserIdFromToken(refreshToken);
     User user = userRepository.findByIdAndLogicDeleteFalse(userIdFromToken)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    LocalDateTime lastLogin = LocalDateTime.now();
+    LocalDateTime lastLogin = LocalDateTime.now(ZoneId.of(timeZone));
     user.updateOnline(lastLogin);
     userRepository.save(user);
   }
@@ -329,7 +329,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // user 접속중으로 업데이트
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     user.updateOnline(now);
     userRepository.save(user);
 

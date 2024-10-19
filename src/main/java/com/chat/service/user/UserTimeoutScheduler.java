@@ -9,11 +9,13 @@ import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -30,12 +32,15 @@ public class UserTimeoutScheduler {
   private static final String SUB_SERVER = "/sub/server/";
   private final ChannelUserRelationRepository channelUserRelationRepository;
 
+  @Value("${server.time-zone}")
+  private String timeZone;
+
   // 1분 마다 타임아웃된 유저를 체크
   @Scheduled(fixedRate = 60 * 1000)
   @Transactional
   public void checkUserTimeouts() {
     // lastlogin이 TIMEOUT시간 넘어간 유저 찾기
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     LocalDateTime timeout = now.minus(TIMEOUT);
     List<UserAndServerIdForTimeoutCheckDto> timeoutDtoList = userRepository.fetchUserAndUserIdForTimeoutCheckDto(
         timeout);

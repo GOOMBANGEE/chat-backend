@@ -26,7 +26,6 @@ import com.chat.exception.UserException;
 import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
-import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -71,13 +70,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class ChatService {
 
   private final CustomUserDetailsService customUserDetailsService;
-  private final ServerUserRelationRepository serverUserRelationRepository;
   private final ChannelRepository channelRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
   private final ChatRepository chatRepository;
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
-  private final UUIDGenerator uuidGenerator;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -87,6 +84,7 @@ public class ChatService {
   private static final String CHANNEL_NOT_PARTICIPATED = "CHANNEL:CHANNEL_NOT_PARTICIPATED";
   private static final String UNSUPPORTED_FILE_TYPE = "CHAT:UNSUPPORTED_FILE_TYPE";
 
+  private final UUIDGenerator uuidGenerator;
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_USER = "/sub/user/";
   private static final String SUB_CHANNEL = "/sub/channel/";
@@ -134,7 +132,7 @@ public class ChatService {
     Integer attachmentHeight =
         chatAttachmentInfoDto != null ? chatAttachmentInfoDto.getAttachmentHeight() : null;
 
-    LocalDateTime createTime = LocalDateTime.now();
+    LocalDateTime createTime = LocalDateTime.now(ZoneId.of(timeZone));
     // 메세지 저장
     Chat chat = Chat.builder()
         .server(server)
@@ -460,7 +458,7 @@ public class ChatService {
     Chat chat = chatRepository.findByIdAndUserAndLogicDeleteFalse(chatId, user)
         .orElseThrow(() -> new ChatException(CHAT_NOT_FOUND));
 
-    LocalDateTime updateTime = LocalDateTime.now();
+    LocalDateTime updateTime = LocalDateTime.now(ZoneId.of(timeZone));
     chat.updateMessage(messageDto, updateTime);
     chatRepository.save(chat);
 
