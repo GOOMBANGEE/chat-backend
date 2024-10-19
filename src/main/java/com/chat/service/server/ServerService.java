@@ -348,39 +348,41 @@ public class ServerService {
   }
 
   private String serverIconScaling(String icon) throws IOException {
-    String[] base64 = icon.split(",");
-    String metadata = base64[0];
-    String base64Data = base64[1];
-    String mimeType = metadata.split(":")[1].split(";")[0];
+    if (icon != null) {
+      String[] base64 = icon.split(",");
+      String metadata = base64[0];
+      String base64Data = base64[1];
+      String mimeType = metadata.split(":")[1].split(";")[0];
 
-    // 이미지 확장자 추출
-    String extension = getFileExtensionFromMimeType(mimeType);
-    if (extension == null) {
-      throw new ServerException(UNSUPPORTED_FILE_TYPE);
+      // 이미지 확장자 추출
+      String extension = getFileExtensionFromMimeType(mimeType);
+      if (extension == null) {
+        throw new ServerException(UNSUPPORTED_FILE_TYPE);
+      }
+
+      // base64 데이터를 바이트 배열로 디코딩
+      byte[] decode = Base64.getDecoder().decode(base64Data);
+
+      // 현재 시간 millisecond
+      ZoneId zoneid = ZoneId.of(timeZone);
+      long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
+
+      String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
+      String filePath = filePathServerIcon + fileName;
+
+      BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
+
+      try {
+        // 이미지 스케일링 후 저장 (작은 이미지)
+        Thumbnails.of(originalImage)
+            .size(56, 56)
+            .toFile(new File(filePath));
+      } catch (IOException e) {
+        throw new ServerException(IMAGE_SAVE_ERROR);
+      }
+      return filePath;
     }
-
-    // base64 데이터를 바이트 배열로 디코딩
-    byte[] decode = Base64.getDecoder().decode(base64Data);
-
-    // 현재 시간 millisecond
-    ZoneId zoneid = ZoneId.of(timeZone);
-    long epochMilli = LocalDateTime.now().atZone(zoneid).toInstant().toEpochMilli();
-
-    String fileName = uuidGenerator.generateUUID() + "_" + epochMilli + "." + extension;
-    String filePath = filePathServerIcon + fileName;
-
-    BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(decode));
-
-    try {
-      // 이미지 스케일링 후 저장 (작은 이미지)
-      Thumbnails.of(originalImage)
-          .size(56, 56)
-          .toFile(new File(filePath));
-    } catch (IOException e) {
-      throw new ServerException(IMAGE_SAVE_ERROR);
-    }
-
-    return filePath;
+    return null;
   }
 
   // base64 문자열에서 이미지 확장자 추출

@@ -76,6 +76,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .select(chatInfoDtoProjection())
         .from(qChat)
         .where(channelIdEq(channelId), chatDeleteFalse(), chatIdLt(chatId))
+        .leftJoin(qChat.chatReference, qChatReference)
+        .leftJoin(qChatReference.user, qUser)
         .orderBy(qChat.id.desc())
         .limit(50)
         .fetch();
