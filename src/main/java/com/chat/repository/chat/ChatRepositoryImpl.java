@@ -95,7 +95,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(keyword),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
@@ -108,7 +109,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(keyword),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser);
 
@@ -120,6 +122,10 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .or(qChat.message.like("%" + keyword + "%"));
   }
 
+  private BooleanExpression enterFalse() {
+    return qChat.enter.isFalse();
+  }
+
   @Override
   public Page<ChatInfoDto> searchChatInfoDtoListByUsername(Channel channel, String username,
       Pageable pageable) {
@@ -128,7 +134,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListByUsernameOption(username),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
@@ -141,7 +148,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(username),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser);
 
@@ -160,7 +168,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListByMessageOption(message),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
@@ -173,7 +182,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(message),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser);
 
@@ -193,7 +203,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListByUsernameAndMessageOption(username, message),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser)
         .offset(pageable.getOffset())
@@ -206,7 +217,8 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .from(qChat)
         .where(channelEq(channel),
             searchChatInfoDtoListDefaultOption(username),
-            chatDeleteFalse())
+            chatDeleteFalse(),
+            enterFalse())
         .leftJoin(qChat.chatReference, qChatReference)
         .leftJoin(qChatReference.user, qUser);
 
