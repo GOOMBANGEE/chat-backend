@@ -26,7 +26,7 @@ import com.chat.dto.server.ServerSettingIconRequestDto;
 import com.chat.dto.server.ServerSettingRequestDto;
 import com.chat.dto.server.ServerUserInfoDto;
 import com.chat.dto.server.ServerUserListResponseDto;
-import com.chat.dto.user.UserInfoForServerJoinResponseDto;
+import com.chat.dto.user.UserInfo;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryRepository;
@@ -496,9 +496,9 @@ public class ServerService {
 
     Long serverId = responseDto.getId();
 
-    UserInfoForServerJoinResponseDto userInfoDto = user.fetchUserInfoForServerJoinResponse();
-    Long userId = userInfoDto.getId();
-    String username = userInfoDto.getUsername();
+    UserInfo userInfo = user.fetchUserInfoForServerJoinResponse();
+    Long userId = userInfo.getId();
+    String username = userInfo.getUsername();
 
     String channelUrl = SUB_CHANNEL + channelId;
     MessageDto newMessageDto = chat

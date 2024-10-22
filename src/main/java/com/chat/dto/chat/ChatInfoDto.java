@@ -13,6 +13,7 @@ public class ChatInfoDto {
 
   private Long id;
 
+  private Long userId;
   private String username;
   private String avatarImageSmall;
 
@@ -37,7 +38,7 @@ public class ChatInfoDto {
   @Builder
   public ChatInfoDto(
       Long id,
-      String username, String avatarImageSmall,
+      Long userId, String username, String avatarImageSmall,
       String message,
       String attachmentType, String attachment, Integer attachmentWidth, Integer attachmentHeight,
       boolean enter,
@@ -46,6 +47,7 @@ public class ChatInfoDto {
       String referenceMessage, String referenceAttachmentType
   ) {
     this.id = id;
+    this.userId = userId;
     this.username = username;
     this.avatarImageSmall = avatarImageSmall;
     this.message = message;

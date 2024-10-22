@@ -80,13 +80,15 @@ public class Chat {
     return this.id;
   }
 
-  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto, String avatar,
+  public MessageDto buildMessageDtoForSendMessageResponse(MessageDto messageDto,
+      Long userId, String avatar,
       ChatInfoDto chatRefInfoDto) {
     return MessageDto.builder()
         .messageType(messageDto.getMessageType())
         .serverId(messageDto.getServerId())
         .channelId(messageDto.getChannelId())
         .chatId(this.id)
+        .userId(userId)
         .username(messageDto.getUsername())
         .avatar(avatar)
         .message(this.message)

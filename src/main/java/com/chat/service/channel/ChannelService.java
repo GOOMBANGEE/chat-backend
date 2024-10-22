@@ -17,7 +17,7 @@ import com.chat.dto.channel.ChannelSettingRequestDto;
 import com.chat.dto.channel.ChannelSettingResponseDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.channel.DirectMessageChannelCreateResponseDto;
-import com.chat.dto.user.UserInfoForDirectMessageChannelCreateDto;
+import com.chat.dto.user.UserInfo;
 import com.chat.exception.CategoryException;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ChatException;
@@ -126,13 +126,13 @@ public class ChannelService {
 
       channelUserRelationRepository.saveAll(channelUserRelationList);
       Long channelId = channel.getChannelIdForChannelCreate();
-      UserInfoForDirectMessageChannelCreateDto userInfo = user.fetchUserInfoForDirectMessageChannelCreate();
-      UserInfoForDirectMessageChannelCreateDto mentionedUserInfo = mentionedUser.fetchUserInfoForDirectMessageChannelCreate();
+      UserInfo userInfo = user.fetchUserInfoForDirectMessageChannelCreate();
+      UserInfo mentionedUserInfo = mentionedUser.fetchUserInfoForDirectMessageChannelCreate();
       DirectMessageChannelCreateResponseDto stompResponseDto = DirectMessageChannelCreateResponseDto.builder()
           .id(channelId)
-          .userId(userInfo.getUserId())
+          .userId(userInfo.getId())
           .username(userInfo.getUsername())
-          .avatar(userInfo.getAvatarImageSmall())
+          .avatar(userInfo.getAvatar())
           .build();
 
       // dm 받는 유저에게 채널생성알림
@@ -146,9 +146,9 @@ public class ChannelService {
       // dm채널 생성유저에게 dm받는 유저의 정보 제공
       return ChannelCreateResponseDto.builder()
           .id(channelId)
-          .mentionedUserId(mentionedUserInfo.getUserId())
+          .mentionedUserId(mentionedUserInfo.getId())
           .mentionedUsername(mentionedUserInfo.getUsername())
-          .mentionedUserAvatar(mentionedUserInfo.getAvatarImageSmall())
+          .mentionedUserAvatar(mentionedUserInfo.getAvatar())
           .build();
     } else {
       Server server = serverRepository

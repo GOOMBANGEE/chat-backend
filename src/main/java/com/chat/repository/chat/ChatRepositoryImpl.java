@@ -30,6 +30,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
   private QChatInfoDto chatInfoDtoProjection() {
     return new QChatInfoDto(
         qChat.id,
+        qChat.user.id,
         qChat.user.username,
         qChat.user.avatarImageSmall,
         qChat.message,

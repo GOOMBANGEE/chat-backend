@@ -1,8 +1,7 @@
 package com.chat.domain.user;
 
 import com.chat.dto.user.ProfileResponseDto;
-import com.chat.dto.user.UserInfoForDirectMessageChannelCreateDto;
-import com.chat.dto.user.UserInfoForServerJoinResponseDto;
+import com.chat.dto.user.UserInfo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,9 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -135,14 +132,6 @@ public class User {
     return this.id;
   }
 
-  public Map<String, String> fetchAvatarPathMapForDeleteChangeAvatar() {
-    Map<String, String> avatarPathMap = new HashMap<>();
-
-    avatarPathMap.put("small", this.avatarImageSmall);
-    avatarPathMap.put("large", this.avatarImageLarge);
-    return avatarPathMap;
-  }
-
   // 비밀번호 재설정
   public void changePassword(String password) {
     this.password = password;
@@ -153,8 +142,8 @@ public class User {
     this.logicDelete = true;
   }
 
-  public UserInfoForServerJoinResponseDto fetchUserInfoForServerJoinResponse() {
-    return UserInfoForServerJoinResponseDto.builder()
+  public UserInfo fetchUserInfoForServerJoinResponse() {
+    return UserInfo.builder()
         .id(this.id)
         .username(this.username)
         .build();
@@ -173,15 +162,18 @@ public class User {
     return this.id;
   }
 
-  public String fetchAvatarForSendMessageResponse() {
-    return this.avatarImageSmall;
+  public UserInfo fetchUserInfoForSendMessageResponse() {
+    return UserInfo.builder()
+        .id(this.id)
+        .avatar(avatarImageSmall)
+        .build();
   }
 
-  public UserInfoForDirectMessageChannelCreateDto fetchUserInfoForDirectMessageChannelCreate() {
-    return UserInfoForDirectMessageChannelCreateDto.builder()
-        .userId(this.id)
+  public UserInfo fetchUserInfoForDirectMessageChannelCreate() {
+    return UserInfo.builder()
+        .id(this.id)
         .username(this.username)
-        .avatarImageSmall(this.avatarImageSmall)
+        .avatar(this.avatarImageSmall)
         .build();
   }
 }

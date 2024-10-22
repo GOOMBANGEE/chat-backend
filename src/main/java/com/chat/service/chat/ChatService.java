@@ -19,6 +19,7 @@ import com.chat.dto.chat.ChatReferenceInfoForSendMessageResponse;
 import com.chat.dto.chat.ChatSearchRequestDto;
 import com.chat.dto.chat.ChatSearchResponseDto;
 import com.chat.dto.chat.SendMessageResponseDto;
+import com.chat.dto.user.UserInfo;
 import com.chat.exception.ChannelException;
 import com.chat.exception.ChatException;
 import com.chat.exception.ServerException;
@@ -165,11 +166,13 @@ public class ChatService {
 
     // stomp pub
     String channelUrl = SUB_CHANNEL + channelId;
-    String avatar = user.fetchAvatarForSendMessageResponse();
+    UserInfo userInfo = user.fetchUserInfoForSendMessageResponse();
+    Long userId = userInfo.getId();
+    String avatar = userInfo.getAvatar();
     MessageDto newMessageDto;
     newMessageDto = chat
         .buildMessageDtoForSendMessageResponse
-            (messageDto, avatar, chatReferenceInfoDto);
+            (messageDto, userId, avatar, chatReferenceInfoDto);
     TransactionSynchronizationManager.registerSynchronization(
         new StompAfterCommitSynchronization(messagingTemplate, channelUrl, newMessageDto)
     );
@@ -177,8 +180,8 @@ public class ChatService {
     // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
     List<Long> userIdList = channelUserRelationRepository
         .fetchUserIdListWhoConnectedButNotSubscribe(channel);
-    userIdList.forEach(userId -> {
-      String userUrl = SUB_USER + userId;
+    userIdList.forEach(userIdInList -> {
+      String userUrl = SUB_USER + userIdInList;
       TransactionSynchronizationManager.registerSynchronization(
           new StompAfterCommitSynchronization(messagingTemplate, userUrl, newMessageDto)
       );
