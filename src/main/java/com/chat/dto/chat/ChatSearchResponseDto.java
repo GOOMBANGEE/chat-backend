@@ -20,16 +20,16 @@ public class ChatSearchResponseDto {
 
   private Integer size;
 
-  private List<ChatInfoDto> chatInfoDtoList;
+  private List<ChatInfoDto> chatList;
 
   @Builder
   public ChatSearchResponseDto(Integer next, Integer previous, Integer total, Integer page,
-      Integer size, List<ChatInfoDto> chatInfoDtoList) {
+      Integer size, List<ChatInfoDto> chatList) {
     this.next = next;
     this.previous = previous;
     this.total = total;
     this.page = page;
     this.size = size;
-    this.chatInfoDtoList = chatInfoDtoList;
+    this.chatList = chatList;
   }
 }

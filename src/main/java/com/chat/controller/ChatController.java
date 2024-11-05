@@ -86,8 +86,8 @@ public class ChatController {
   @PostMapping("/{channelId}/search")
   public ResponseEntity<ChatSearchResponseDto> search(
       @NotNull(message = CHANNEL_INVALID)
-  @PathVariable("channelId")
-  Long channelId,
+      @PathVariable("channelId")
+      Long channelId,
       @NotNull(message = PAGE_INVALID)
       @Min(value = 1, message = PAGE_INVALID)
       @RequestParam(defaultValue = "1")

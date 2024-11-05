@@ -564,7 +564,6 @@ public class ChatService {
       // 내용만으로 검색
       chatPage = chatRepository.searchChatInfoDtoListByMessage(channel, message, pageable);
     }
-
     assert chatPage != null;
     validatePage(page, chatPage);
 
@@ -579,7 +578,7 @@ public class ChatService {
         .total(chatPage.getTotalPages())
         .page(page)
         .size(size)
-        .chatInfoDtoList(chatInfoDtoList)
+        .chatList(chatInfoDtoList)
         .build();
   }
 
