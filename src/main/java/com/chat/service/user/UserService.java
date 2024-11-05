@@ -1,5 +1,6 @@
 package com.chat.service.user;
 
+import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.user.Role;
 import com.chat.domain.user.User;
 import com.chat.domain.user.UserFriend;
@@ -37,6 +38,7 @@ import com.chat.dto.user.UserInfoForFriendWaitingListResponseDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
+import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.RoleRepository;
@@ -87,6 +89,7 @@ public class UserService {
   private final UserFriendRepository userFriendRepository;
   private final UserFriendTempRepository userFriendTempRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
   private final NotificationRepository notificationRepository;
 
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
@@ -323,6 +326,7 @@ public class UserService {
   }
 
   // 사용자정보 fetch
+  @Transactional
   public ProfileResponseDto profile() {
     String email = customUserDetailsService.getEmailByUserDetails();
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
@@ -332,6 +336,15 @@ public class UserService {
     LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     user.updateOnline(now);
     userRepository.save(user);
+
+    // user가 속해있는 channel unsubscribe
+    // 새로고침시 client => unsubscribe
+    // server => subscribe
+    // 따라서 server에서 subscribe로 판단하여 user/{userId}로 메시지 보내지않는 문제 발생
+    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+        .fetchChannelUserRelationListBySubscribeTrueAndUser(user);
+    channelUserRelationList.forEach((ChannelUserRelation::unsubscribe));
+    channelUserRelationRepository.saveAll(channelUserRelationList);
 
     // user가 속해있는 서버에 접속알림
     Long userId = user.fetchUserIdForLoginAlert();
