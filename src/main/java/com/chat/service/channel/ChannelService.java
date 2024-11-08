@@ -7,6 +7,7 @@ import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
+import com.chat.domain.user.Notification;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
@@ -32,6 +33,7 @@ import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerRoleRepository;
 import com.chat.repository.server.ServerRoleUserRelationRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
+import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -58,6 +60,7 @@ public class ChannelService {
   private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
   private final ChatRepository chatRepository;
+  private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
@@ -291,8 +294,6 @@ public class ChannelService {
       throws JsonProcessingException {
     Channel channel = channelRepository.findByIdAndLogicDeleteFalseAndServerId(channelId, serverId)
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
-    // todo
-    // 권한확인필요
 
     String name = requestDto.getName();
     channel.rename(name);
@@ -438,5 +439,15 @@ public class ChannelService {
 
     channelUserRelation.updateLastReadMessageId(chatId);
     channelUserRelationRepository.save(channelUserRelation);
+
+    // dm channel인 경우, notification read처리
+    if (channel.isDirectMessageChannel()) {
+      // 채널, 유저에 해당하는 notification을 모두 찾아서 read 처리
+      List<Notification> notificationList = notificationRepository.findByChannelAndMentionedUserAndIsReadFalse(
+          channel, user);
+
+      notificationList.forEach(Notification::read);
+      notificationRepository.saveAll(notificationList);
+    }
   }
 }

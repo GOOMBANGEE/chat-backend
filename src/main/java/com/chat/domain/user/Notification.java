@@ -48,4 +48,8 @@ public class Notification {
     this.user = user;
     this.mentionedUser = mentionedUser;
   }
+
+  public void read() {
+    isRead = true;
+  }
 }

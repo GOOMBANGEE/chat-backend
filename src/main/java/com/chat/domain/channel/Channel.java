@@ -58,10 +58,6 @@ public class Channel {
     return this.id;
   }
 
-  public boolean isOpen() {
-    return open;
-  }
-
   public void rename(String name) {
     this.name = name;
   }
@@ -86,5 +82,9 @@ public class Channel {
   public void deleteCategory(Double displayOrder) {
     this.displayOrder = displayOrder;
     this.category = null;
+  }
+
+  public boolean isDirectMessageChannel() {
+    return this.server == null;
   }
 }

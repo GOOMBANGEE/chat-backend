@@ -78,16 +78,6 @@ public class ChannelController {
     channelService.delete(serverId, channelId);
     return ResponseEntity.ok(null);
   }
-//
-//  // 채널 유저 목록
-//  @GetMapping("/{channelId}/list/user")
-//  public ResponseEntity<ServerUserListResponseDto> userList(
-//      @NotNull(message = CHANNEL_INVALID)
-//      @PathVariable("channelId")
-//      Long channelId) {
-//    ServerUserListResponseDto responseDto = channelService.userList(channelId);
-//    return ResponseEntity.ok(responseDto);
-//  }
 
   // 채널 메시지 읽기처리
   @PostMapping("/{channelId}/{chatId}/read")

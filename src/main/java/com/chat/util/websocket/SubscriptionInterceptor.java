@@ -6,11 +6,8 @@ import com.chat.exception.ChannelException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
-import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
-import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
-import com.chat.repository.user.UserRepository;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +25,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SubscriptionInterceptor implements ChannelInterceptor {
 
-  private final ServerRepository serverRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
-  private final ChannelRepository channelRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
-  private final UserRepository userRepository;
 
   private final TokenProvider tokenProvider;
 

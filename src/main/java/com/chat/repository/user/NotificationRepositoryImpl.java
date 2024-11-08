@@ -33,9 +33,8 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
             qNotification.user.avatarImageSmall
         ))
         .from(qNotification)
-        .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email))
+        .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email), readFalse())
         .orderBy(qNotification.id.desc())
-        .limit(10)
         .fetch();
   }
 
@@ -57,7 +56,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
             qNotification.user.avatarImageSmall
         ))
         .from(qNotification)
-        .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email))
+        .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email), readFalse())
         .orderBy(qNotification.id.desc())
         .limit(10)
         .fetch();
@@ -69,5 +68,9 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
 
   private BooleanExpression chatLogicDeleteFalse() {
     return qNotification.chat.logicDelete.isFalse();
+  }
+
+  private BooleanExpression readFalse() {
+    return qNotification.isRead.isFalse();
   }
 }
