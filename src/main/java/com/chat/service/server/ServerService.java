@@ -180,7 +180,7 @@ public class ServerService {
     server.setDefaultChannel(channel);
     serverRepository.save(server);
 
-    LocalDateTime createTime = LocalDateTime.now();
+    LocalDateTime createTime = LocalDateTime.now(ZoneId.of(timeZone));
     Chat chat = Chat.builder()
         .server(server)
         .channel(channel)
@@ -483,7 +483,7 @@ public class ServerService {
     Long channelId = serverJoinInfoDto.getChannelId();
     ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse(channelId);
     Channel channel = serverJoinInfoDto.getChannel();
-    LocalDateTime createTime = LocalDateTime.now();
+    LocalDateTime createTime = LocalDateTime.now(ZoneId.of(timeZone));
     // 서버 입장 메시지 전송
     Chat chat = Chat.builder()
         .server(server)
