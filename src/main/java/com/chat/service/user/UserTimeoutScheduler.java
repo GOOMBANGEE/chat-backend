@@ -1,12 +1,13 @@
 package com.chat.service.user;
 
+import static java.util.stream.Collectors.toList;
+
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
-import com.chat.dto.user.UserAndServerIdForTimeoutCheckDto;
+import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
 import com.chat.repository.channel.ChannelUserRelationRepository;
-import com.chat.repository.user.UserRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -25,12 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserTimeoutScheduler {
 
-  private final UserRepository userRepository;
+  private final ChannelUserRelationRepository channelUserRelationRepository;
   private final SimpMessagingTemplate messagingTemplate;
 
   private static final Duration TIMEOUT = Duration.ofMinutes(30);
   private static final String SUB_SERVER = "/sub/server/";
-  private final ChannelUserRelationRepository channelUserRelationRepository;
 
   @Value("${server.time-zone}")
   private String timeZone;
@@ -42,27 +42,27 @@ public class UserTimeoutScheduler {
     // lastlogin이 TIMEOUT시간 넘어간 유저 찾기
     LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     LocalDateTime timeout = now.minus(TIMEOUT);
-    List<UserAndServerIdForTimeoutCheckDto> timeoutDtoList = userRepository.fetchUserAndUserIdForTimeoutCheckDto(
-        timeout);
+
+    List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> timeoutDtoList = channelUserRelationRepository
+        .fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(timeout);
 
     List<User> userList = timeoutDtoList.stream()
-        .map(UserAndServerIdForTimeoutCheckDto::getUser)
+        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUser)
         .distinct().toList();
-    userList.forEach(user -> {
-      user.updateOffline();
-      List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
-          .fetchChannelUserRelationListBySubscribeTrueAndUser(user);
-      channelUserRelationList.forEach(ChannelUserRelation::unsubscribe);
-      channelUserRelationRepository.saveAll(channelUserRelationList);
-    });
-    userRepository.saveAll(userList);
+    List<ChannelUserRelation> channelUserRelationList = timeoutDtoList.stream()
+        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getChannelUserRelation)
+        .toList();
 
+    userList.forEach(User::updateOffline);
+    channelUserRelationList.forEach(ChannelUserRelation::unsubscribe);
+    // 유저 오프라인 메시지 pub
     // 유저id를 기준으로 서버id리스트로 묶어줌
     Map<Long, List<Long>> userServerMap = timeoutDtoList.stream()
-        .collect(Collectors.groupingBy(UserAndServerIdForTimeoutCheckDto::getUserId,
-            Collectors.mapping(UserAndServerIdForTimeoutCheckDto::getServerId,
-                Collectors.toList())));
-
+        .collect(
+            Collectors.groupingBy(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUserId,
+                Collectors.mapping(
+                    UserAndServerAndChannelUserRelationForTimeoutCheckDto::getServerId,
+                    toList())));
     userServerMap.forEach((userId, serverIdList) ->
         serverIdList.forEach(serverId ->
             CompletableFuture.runAsync(() ->

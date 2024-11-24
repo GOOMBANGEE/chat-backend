@@ -6,6 +6,8 @@ import com.chat.domain.server.Server;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
+import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +36,8 @@ public interface ChannelUserRelationRepositoryCustom {
   List<Long> fetchUserIdListWhoConnectedButNotSubscribe(Channel channel);
 
   List<ChannelUserRelation> fetchChannelUserRelationListBySubscribeTrueAndUser(User user);
+
+  List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(
+      LocalDateTime time);
+
 }

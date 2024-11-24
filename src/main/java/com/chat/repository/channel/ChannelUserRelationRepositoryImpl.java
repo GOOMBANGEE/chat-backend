@@ -6,13 +6,17 @@ import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.channel.QChannelUserRelation;
 import com.chat.domain.server.Server;
+import com.chat.domain.user.QUser;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.channel.QChannelInfoDto;
 import com.chat.dto.channel.QChannelUserRelationInfoDto;
+import com.chat.dto.user.QUserAndServerAndChannelUserRelationForTimeoutCheckDto;
+import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,7 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private final JPAQueryFactory queryFactory;
   QChannelUserRelation qChannelUserRelation = QChannelUserRelation.channelUserRelation;
+  QUser qUser = QUser.user;
 
   @Override
   public ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
@@ -196,5 +201,26 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   private BooleanExpression subscribeTrue() {
     return qChannelUserRelation.subscribe.isTrue();
+  }
+
+  // 등록된 상태, 최근 timeout 시간안에 갱신되지않은 상태, online 상태 -> offline 메시지 발송이 되지않은 상태
+  @Override
+  public List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(
+      LocalDateTime time) {
+    return queryFactory
+        .select(new QUserAndServerAndChannelUserRelationForTimeoutCheckDto(
+            qChannelUserRelation.user,
+            qChannelUserRelation.user.id,
+            qChannelUserRelation.channel.server.id,
+            qChannelUserRelation,
+            qChannelUserRelation.id
+        ))
+        .from(qChannelUserRelation)
+        .where(logicDeleteFalse(), timeoutTrue(time), userOnlineTrue(), subscribeTrue())
+        .fetch();
+  }
+
+  private BooleanExpression timeoutTrue(LocalDateTime time) {
+    return qUser.lastLogin.before(time);
   }
 }
