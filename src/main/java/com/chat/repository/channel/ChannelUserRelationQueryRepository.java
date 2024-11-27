@@ -214,4 +214,18 @@ public class ChannelUserRelationQueryRepository {
   private BooleanExpression timeoutTrue(LocalDateTime time) {
     return qUser.lastLogin.before(time);
   }
+
+  public void bulkDeleteByServerIdAndEmail(Long serverId, String email) {
+    queryFactory
+        .delete(qChannelUserRelation)
+        .where(serverIdEq(serverId), userEmailEq(email))
+        .execute();
+  }
+
+  public void bulkDeleteByChannelId(Long channelId) {
+    queryFactory
+        .delete(qChannelUserRelation)
+        .where(channelIdEq(channelId))
+        .execute();
+  }
 }

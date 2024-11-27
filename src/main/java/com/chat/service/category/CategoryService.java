@@ -18,6 +18,7 @@ import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryQueryRepository;
 import com.chat.repository.category.CategoryRepository;
 import com.chat.repository.category.CategoryServerRoleRelationRepository;
+import com.chat.repository.category.CategoryUserRelationQueryRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
 import com.chat.repository.channel.ChannelQueryRepository;
 import com.chat.repository.channel.ChannelRepository;
@@ -51,6 +52,9 @@ public class CategoryService {
   private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final CategoryRepository categoryRepository;
   private final CategoryQueryRepository categoryQueryRepository;
+  private final CategoryUserRelationRepository categoryUserRelationRepository;
+  private final CategoryUserRelationQueryRepository categoryUserRelationQueryRepository;
+  private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
   private final ChannelRepository channelRepository;
   private final ChannelQueryRepository channelQueryRepository;
 
@@ -63,8 +67,6 @@ public class CategoryService {
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
   private final ObjectMapper mapper = new ObjectMapper();
-  private final CategoryUserRelationRepository categoryUserRelationRepository;
-  private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
 
 
   @Transactional
@@ -228,14 +230,10 @@ public class CategoryService {
     channelRepository.saveAll(channelList);
 
     // CategoryUserRelation 모두 삭제
-    List<CategoryUserRelation> categoryUserRelationList = categoryUserRelationRepository
-        .findByCategory(category);
-    categoryUserRelationRepository.deleteAll(categoryUserRelationList);
+    categoryUserRelationQueryRepository.bulkDeleteByCategoryId(categoryId);
 
     // CategoryServerRoleRelation 모두 삭제
-    List<CategoryServerRoleRelation> categoryServerRoleRelationList = categoryServerRoleRelationRepository
-        .findByCategory(category);
-    categoryServerRoleRelationRepository.deleteAll(categoryServerRoleRelationList);
+    categoryServerRoleRelationRepository.bulkDeleteByCategoryId(categoryId);
 
     // 카테고리 삭제 메시지 발송
     String serverUrl = SUB_SERVER + serverId;

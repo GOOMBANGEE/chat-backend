@@ -38,4 +38,30 @@ public class CategoryUserRelationQueryRepository {
   private BooleanExpression logicDeleteFalse() {
     return qCategoryUserRelation.category.logicDelete.isFalse();
   }
+
+  public void bulkDeleteByCategoryId(Long categoryId) {
+    queryFactory
+        .delete(qCategoryUserRelation)
+        .where(categoryIdEq(categoryId))
+        .execute();
+  }
+
+  private BooleanExpression categoryIdEq(Long categoryId) {
+    return qCategoryUserRelation.category.id.eq(categoryId);
+  }
+
+  public void bulkDeleteByServerIdAndEmail(Long serverId, String email) {
+    queryFactory
+        .delete(qCategoryUserRelation)
+        .where(serverIdEq(serverId), userEmailEq(email))
+        .execute();
+  }
+
+  private BooleanExpression serverIdEq(Long serverId) {
+    return qCategoryUserRelation.category.server.id.eq(serverId);
+  }
+
+  private BooleanExpression userEmailEq(String email) {
+    return qCategoryUserRelation.user.email.eq(email);
+  }
 }

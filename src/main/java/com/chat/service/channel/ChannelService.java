@@ -332,9 +332,7 @@ public class ChannelService {
     List<Long> allowUserIdList = requestDto.getAllowUserIdList();
     if (open && allowRoleIdList == null && allowUserIdList == null) {
       // open 설정시 기존 ChannelServerRoleRelation 모두 삭제
-      List<ChannelServerRoleRelation> channelServerRoleRelationList = channelServerRoleRelationRepository
-          .findByChannel(channel);
-      channelServerRoleRelationRepository.deleteAll(channelServerRoleRelationList);
+      channelServerRoleRelationRepository.bulkDeleteByChannelId(channelId);
 
       // 서버에 속한 모든 유저 ChannelUserRelation 등록 (기존에 등록되어있는 유저는 제외)
       // 이미 ChannelUserRelation에 등록된 유저 조회
@@ -402,14 +400,10 @@ public class ChannelService {
     channelRepository.save(channel);
 
     // ChannelUserRelation 모두 삭제
-    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
-        .findByChannel(channel);
-    channelUserRelationRepository.deleteAll(channelUserRelationList);
+    channelUserRelationQueryRepository.bulkDeleteByChannelId(channelId);
 
     // ChannelServerRoleRelation 모두 삭제
-    List<ChannelServerRoleRelation> channelServerRoleRelationList = channelServerRoleRelationRepository
-        .findByChannel(channel);
-    channelServerRoleRelationRepository.deleteAll(channelServerRoleRelationList);
+    channelServerRoleRelationRepository.bulkDeleteByChannelId(channelId);
 
     // 채널삭제 메시지 발송
     String serverUrl = SUB_SERVER + serverId;

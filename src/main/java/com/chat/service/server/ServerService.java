@@ -635,10 +635,10 @@ public class ServerService {
     serverRepository.save(server);
     serverUserRelationRepository.save(serverUserRelation);
 
+    // 나간 유저는 CategoryUserRelation에서 삭제
+    categoryUserRelationQueryRepository.bulkDeleteByServerIdAndEmail(serverId, email);
     // 나간 유저는 ChannelUserRelation에서 삭제
-    List<ChannelUserRelation> channelUserRelationList = channelUserRelationQueryRepository
-        .fetchChannelUserRelationListByServerAndUser(server, user);
-    channelUserRelationRepository.deleteAll(channelUserRelationList);
+    channelUserRelationQueryRepository.bulkDeleteByServerIdAndEmail(serverId, email);
 
     String serverUrl = SUB_SERVER + serverId;
     Long userId = user.fetchUserIdForServerLeaveResponse();

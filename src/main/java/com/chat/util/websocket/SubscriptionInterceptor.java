@@ -20,6 +20,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -62,6 +63,7 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
   // 처음 구독방법과 같은방법에 유저인증만 추가 -> 접속한 채널만 추가로 구독하는 방식으로 접속시마다 발생하는 다수쿼리 발생을 줄임
 
   @Override
+  @Transactional
   public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
     StompHeaderAccessor accessor =
         MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);

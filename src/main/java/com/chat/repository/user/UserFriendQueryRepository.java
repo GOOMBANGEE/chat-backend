@@ -65,4 +65,15 @@ public class UserFriendQueryRepository {
   private BooleanExpression userEq(User user) {
     return qUserFriend.user.eq(user);
   }
+
+  public void bulkDeleteByUserFriendIn(List<UserFriend> userFriendList) {
+    queryFactory
+        .delete(qUserFriend)
+        .where(userFriendIn(userFriendList))
+        .execute();
+  }
+
+  private BooleanExpression userFriendIn(List<UserFriend> userFriendList) {
+    return qUserFriend.in(userFriendList);
+  }
 }

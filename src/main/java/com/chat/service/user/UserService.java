@@ -765,7 +765,9 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 삭제
-    userFriendRepository.deleteAll(userFriendRepository.fetchListByUserAndFriend(user, friend));
+    List<UserFriend> userFriendList = userFriendQueryRepository
+        .fetchListByUserAndFriend(user, friend);
+    userFriendQueryRepository.bulkDeleteByUserFriendIn(userFriendList);
 
     // id, username -> 친구삭제 요청을 보낸유저
     // friendId -> 친구삭제 대상
