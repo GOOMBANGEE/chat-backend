@@ -10,14 +10,15 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class CategoryUserRelationRepositoryImpl implements CategoryUserRelationRepositoryCustom {
+public class CategoryUserRelationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QCategoryUserRelation qCategoryUserRelation = QCategoryUserRelation.categoryUserRelation;
 
-  @Override
   public List<CategoryInfoDto> fetchCategoryInfoDtoListByUser(User user) {
     return queryFactory
         .select(new QCategoryInfoDto(

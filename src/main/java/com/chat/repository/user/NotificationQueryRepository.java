@@ -9,14 +9,15 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class NotificationRepositoryImpl implements NotificationRepositoryCustom {
+public class NotificationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QNotification qNotification = QNotification.notification;
 
-  @Override
   public List<NotificationDirectMessageInfoDto> fetchNotificationInfoDirectMessageDtoByUserEmail(
       String email) {
     return queryFactory
@@ -38,7 +39,6 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         .fetch();
   }
 
-  @Override
   public List<NotificationServerInfoDto> fetchNotificationServerInfoDtoByUserEmail(String email) {
     return queryFactory
         .select(new QNotificationServerInfoDto(

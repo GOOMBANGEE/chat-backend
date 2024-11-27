@@ -8,9 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ServerUserRelationRepository extends
-    JpaRepository<ServerUserRelation, Long>,
-    ServerUserRelationRepositoryCustom {
+public interface ServerUserRelationRepository extends JpaRepository<ServerUserRelation, Long> {
 
 
   Optional<ServerUserRelation> findServerUserRelationByUserAndServer(User user, Server server);

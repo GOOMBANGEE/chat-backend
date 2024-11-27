@@ -20,15 +20,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRepositoryCustom {
+public class ChannelUserRelationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QChannelUserRelation qChannelUserRelation = QChannelUserRelation.channelUserRelation;
   QUser qUser = QUser.user;
 
-  @Override
   public ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
       Long serverId, Long channelId, String email) {
     if (serverId == null) {
@@ -43,7 +44,7 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
               channelIdEq(channelId),
               userEmailEq(email)
           )
-          .fetchOne();
+          .fetchFirst();
     } else {
       return queryFactory
           .select(new QChannelUserRelationInfoDto(
@@ -58,7 +59,7 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
               channelIdEq(channelId),
               userEmailEq(email)
           )
-          .fetchOne();
+          .fetchFirst();
     }
   }
 
@@ -74,20 +75,18 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
     return qChannelUserRelation.user.email.eq(email);
   }
 
-  @Override
   public Optional<ChannelUserRelation> fetchChannelUserRelationByChannelIdAndUserId(Long channelId,
       Long userId) {
     return Optional.ofNullable(queryFactory
         .selectFrom(qChannelUserRelation)
         .where(channelIdEq(channelId), userIdEq(userId))
-        .fetchOne());
+        .fetchFirst());
   }
 
   private BooleanExpression userIdEq(Long userId) {
     return qChannelUserRelation.user.id.eq(userId);
   }
 
-  @Override
   public List<ChannelInfoDto> fetchChannelInfoDtoListByUser(User user) {
     return queryFactory
         .select(new QChannelInfoDto(
@@ -111,7 +110,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
     return qChannelUserRelation.channel.logicDelete.isFalse();
   }
 
-  @Override
   public List<ChannelInfoDto> fetchDirectMessageChannelInfoDtoListByUser(User user) {
     return queryFactory
         .select(new QChannelInfoDto(
@@ -130,7 +128,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
         .fetch();
   }
 
-  @Override
   public List<User> fetchUserListByChannel(Channel channel) {
     return queryFactory
         .select(qChannelUserRelation.user)
@@ -143,7 +140,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
     return isEmpty(channel) ? null : qChannelUserRelation.channel.eq(channel);
   }
 
-  @Override
   public List<ChannelUserRelation> fetchChannelUserRelationListByServerAndUser
       (Server server, User user) {
     return queryFactory
@@ -158,13 +154,12 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
   }
 
   // 두 유저가 속해있는 dm채널이 있는지 확인
-  @Override
   public Optional<ChannelUserRelation> searchDirectMessageChannel(User user, User mentionedUser) {
     return Optional.ofNullable(queryFactory
         .select(qChannelUserRelation)
         .from(qChannelUserRelation)
         .where(userEq(user), mentionedUserEq(mentionedUser))
-        .fetchOne());
+        .fetchFirst());
   }
 
   private BooleanExpression mentionedUserEq(User mentionedUser) {
@@ -173,7 +168,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
 
   // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
   // channel eq, user online true
-  @Override
   public List<Long> fetchUserIdListWhoConnectedButNotSubscribe(Channel channel) {
     return queryFactory
         .select(qChannelUserRelation.user.id)
@@ -190,7 +184,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
     return qChannelUserRelation.user.online.isTrue();
   }
 
-  @Override
   public List<ChannelUserRelation> fetchChannelUserRelationListBySubscribeTrueAndUser(User user) {
     return queryFactory
         .select(qChannelUserRelation)
@@ -204,7 +197,6 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
   }
 
   // 등록된 상태, 최근 timeout 시간안에 갱신되지않은 상태, online 상태 -> offline 메시지 발송이 되지않은 상태
-  @Override
   public List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(
       LocalDateTime time) {
     return queryFactory
@@ -212,8 +204,7 @@ public class ChannelUserRelationRepositoryImpl implements ChannelUserRelationRep
             qChannelUserRelation.user,
             qChannelUserRelation.user.id,
             qChannelUserRelation.channel.server.id,
-            qChannelUserRelation,
-            qChannelUserRelation.id
+            qChannelUserRelation
         ))
         .from(qChannelUserRelation)
         .where(logicDeleteFalse(), timeoutTrue(time), userOnlineTrue(), subscribeTrue())

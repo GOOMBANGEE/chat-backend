@@ -13,14 +13,15 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
+public class ChannelQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QChannel qChannel = QChannel.channel;
 
-  @Override
   public List<ChannelRegistrationDto> fetchChannelRegistrationDtoListByServer(Server server) {
     return queryFactory
         .select(new QChannelRegistrationDto(
@@ -44,7 +45,6 @@ public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
     return qChannel.open.isTrue();
   }
 
-  @Override
   public List<MessageQueueInitializeDto> fetchMessageQueueInitializeDtoList() {
     return queryFactory
         .select(new QMessageQueueInitializeDto(
@@ -55,7 +55,6 @@ public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
         .fetch();
   }
 
-  @Override
   public Double fetchMaxDisplayOrderByCategory(Category category) {
     return queryFactory
         .select(qChannel.displayOrder.max().coalesce(1024.0))
@@ -68,7 +67,6 @@ public class ChannelRepositoryImpl implements ChannelRepositoryCustom {
     return isEmpty(category) ? null : qChannel.category.eq(category);
   }
 
-  @Override
   public Double fetchMaxDisplayOrderByServerAndCategoryNull(Server server) {
     return queryFactory
         .select(qChannel.displayOrder.max().coalesce(1024.0))

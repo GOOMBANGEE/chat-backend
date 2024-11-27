@@ -17,16 +17,17 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepositoryCustom {
+public class ServerUserRelationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QServerUserRelation qServerUserRelation = QServerUserRelation.serverUserRelation;
   QServer qServer = QServer.server;
   QUser qUser = QUser.user;
 
-  @Override
   public Optional<Server> fetchServerByUserAndServerId(User user, Long serverId) {
     return Optional.ofNullable(queryFactory
         .select(qServerUserRelation.server)
@@ -53,20 +54,18 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
     return qServerUserRelation.logicDelete.eq(Boolean.FALSE);
   }
 
-  @Override
   public Optional<ServerUserRelation> fetchServerUserRelationByServerIdAndUserId(Long serverId,
       Long userId) {
     return Optional.ofNullable(queryFactory
         .selectFrom(qServerUserRelation)
         .where(serverIdEq(serverId), userIdEq(userId))
-        .fetchOne());
+        .fetchFirst());
   }
 
   private BooleanExpression userIdEq(Long userId) {
     return qServerUserRelation.user.id.eq(userId);
   }
 
-  @Override
   public List<ServerInfoDto> fetchServerInfoDtoListByUser(User user) {
     return queryFactory
         .select(new QServerInfoDto(
@@ -80,7 +79,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   }
 
   // 서버에 속해있는 유저의 정보
-  @Override
   public List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(
       User user, Server server) {
     return queryFactory
@@ -106,7 +104,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
 
   // 유저가 속해있는 모든 서버의 id 가져옴
   // server.id
-  @Override
   public List<Long> fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(
       User user) {
     return queryFactory
@@ -116,7 +113,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
         .fetch();
   }
 
-  @Override
   public List<User> fetchUserListByServer(Server server) {
     return queryFactory
         .select(qServerUserRelation.user)
@@ -126,7 +122,6 @@ public class ServerUserRelationRepositoryImpl implements ServerUserRelationRepos
   }
 
   // serverIcon 배포용 server참가자 id list
-  @Override
   public List<Long> fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(Server server) {
     return queryFactory
         .select(qServerUserRelation.user.id)

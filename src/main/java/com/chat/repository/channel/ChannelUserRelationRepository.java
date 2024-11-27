@@ -8,8 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ChannelUserRelationRepository extends JpaRepository<ChannelUserRelation, Long>,
-    ChannelUserRelationRepositoryCustom {
+public interface ChannelUserRelationRepository extends JpaRepository<ChannelUserRelation, Long> {
 
   List<ChannelUserRelation> findByChannel(Channel channel);
 

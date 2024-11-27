@@ -10,10 +10,11 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class ServerRoleUserRelationRepositoryImpl implements
-    ServerRoleUserRelationRepositoryCustom {
+public class ServerRoleUserRelationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QServerRoleUserRelation qServerRoleUserRelation = QServerRoleUserRelation.serverRoleUserRelation;
@@ -21,7 +22,6 @@ public class ServerRoleUserRelationRepositoryImpl implements
   // 유저가 가지고있는 권한리스트 확인
   // 채널 생성 권한 확인
   // server, user가 주어졌을때, ServerRole에서 createChannel이 활성화 되어있는지 확인
-  @Override
   public List<ServerRole> fetchServerRoleListByServerAndUser(Server server, User user) {
     return queryFactory
         .select(qServerRoleUserRelation.serverRole)
@@ -38,7 +38,6 @@ public class ServerRoleUserRelationRepositoryImpl implements
     return isEmpty(user) ? null : qServerRoleUserRelation.user.eq(user);
   }
 
-  @Override
   public List<User> fetchUserByServerRoleIn(List<ServerRole> serverRoleList) {
     return queryFactory
         .select(qServerRoleUserRelation.user)

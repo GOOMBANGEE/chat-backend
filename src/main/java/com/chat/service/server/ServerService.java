@@ -30,11 +30,16 @@ import com.chat.dto.user.UserInfo;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryRepository;
+import com.chat.repository.category.CategoryUserRelationQueryRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
+import com.chat.repository.channel.ChannelQueryRepository;
 import com.chat.repository.channel.ChannelRepository;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
+import com.chat.repository.server.ServerQueryRepository;
 import com.chat.repository.server.ServerRepository;
+import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -71,11 +76,16 @@ public class ServerService {
 
   private final CustomUserDetailsService customUserDetailsService;
   private final ServerRepository serverRepository;
+  private final ServerQueryRepository serverQueryRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
+  private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final CategoryRepository categoryRepository;
   private final CategoryUserRelationRepository categoryUserRelationRepository;
+  private final CategoryUserRelationQueryRepository categoryUserRelationQueryRepository;
   private final ChannelRepository channelRepository;
+  private final ChannelQueryRepository channelQueryRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final ChatRepository chatRepository;
   private final UserRepository userRepository;
 
@@ -234,18 +244,18 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    List<ServerInfoDto> serverInfoDtoList = serverUserRelationRepository
+    List<ServerInfoDto> serverInfoDtoList = serverUserRelationQueryRepository
         .fetchServerInfoDtoListByUser(user);
 
     // 유저가 접근할 권한이 있는 카테고리
-    List<CategoryInfoDto> categoryInfoDtoList = categoryUserRelationRepository
+    List<CategoryInfoDto> categoryInfoDtoList = categoryUserRelationQueryRepository
         .fetchCategoryInfoDtoListByUser(user);
 
     // 유저가 접근할 권한이 있는 채널
-    List<ChannelInfoDto> channelInfoDtoList = channelUserRelationRepository
+    List<ChannelInfoDto> channelInfoDtoList = channelUserRelationQueryRepository
         .fetchChannelInfoDtoListByUser(user);
 
-    List<ChannelInfoDto> directMessageChannelInfoDtoList = channelUserRelationRepository
+    List<ChannelInfoDto> directMessageChannelInfoDtoList = channelUserRelationQueryRepository
         .fetchDirectMessageChannelInfoDtoListByUser(user);
 
     return ServerListResponseDto.builder()
@@ -333,7 +343,7 @@ public class ServerService {
           .message(mapper.writeValueAsString(serverInfoDto))
           .build();
 
-      List<Long> userIdList = serverUserRelationRepository
+      List<Long> userIdList = serverUserRelationQueryRepository
           .fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(server);
       userIdList.forEach(userId -> {
         String userUrl = SUB_USER + userId;
@@ -407,7 +417,8 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    ServerJoinInfoDto serverJoinInfoDto = serverRepository.fetchServerInfoDtoByServerCode(code);
+    ServerJoinInfoDto serverJoinInfoDto = serverQueryRepository
+        .fetchServerInfoDtoByServerCode(code);
     Server server = serverJoinInfoDto.getServer();
 
     Optional<ServerUserRelation> serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
@@ -457,7 +468,7 @@ public class ServerService {
     categoryUserRelationRepository.saveAll(categoryUserRelationList);
 
     // server내의 open채널 등록설정
-    List<ChannelRegistrationDto> channelRegistrationDtoList = channelRepository
+    List<ChannelRegistrationDto> channelRegistrationDtoList = channelQueryRepository
         .fetchChannelRegistrationDtoListByServer(server);
     List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
     channelRegistrationDtoList.forEach(
@@ -506,7 +517,7 @@ public class ServerService {
     messagingTemplate.convertAndSend(channelUrl, newMessageDto);
 
     // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
-    List<Long> userIdList = channelUserRelationRepository
+    List<Long> userIdList = channelUserRelationQueryRepository
         .fetchUserIdListWhoConnectedButNotSubscribe(channel);
     userIdList.forEach(userIdInList -> {
       String userUrl = SUB_USER + userIdInList;
@@ -548,7 +559,7 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
+    Server server = serverUserRelationQueryRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     // invite code -> expire 7d default
@@ -599,7 +610,7 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    Server server = serverUserRelationRepository.fetchServerByUserAndServerId(user, serverId)
+    Server server = serverUserRelationQueryRepository.fetchServerByUserAndServerId(user, serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     ServerUserRelation serverUserRelation = serverUserRelationRepository
@@ -625,7 +636,7 @@ public class ServerService {
     serverUserRelationRepository.save(serverUserRelation);
 
     // 나간 유저는 ChannelUserRelation에서 삭제
-    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+    List<ChannelUserRelation> channelUserRelationList = channelUserRelationQueryRepository
         .fetchChannelUserRelationListByServerAndUser(server, user);
     channelUserRelationRepository.deleteAll(channelUserRelationList);
 
@@ -688,7 +699,7 @@ public class ServerService {
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     // 서버에 속해있는 유저 정보
-    List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationRepository
+    List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationQueryRepository
         .fetchServerUserInfoDtoListByUserAndServer(user, server);
 
     if (serverUserInfoDtoList.isEmpty()) {

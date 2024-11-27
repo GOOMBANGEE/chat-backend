@@ -7,6 +7,7 @@ import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserTimeoutScheduler {
 
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final SimpMessagingTemplate messagingTemplate;
 
   private static final Duration TIMEOUT = Duration.ofMinutes(30);
@@ -43,7 +45,7 @@ public class UserTimeoutScheduler {
     LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     LocalDateTime timeout = now.minus(TIMEOUT);
 
-    List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> timeoutDtoList = channelUserRelationRepository
+    List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> timeoutDtoList = channelUserRelationQueryRepository
         .fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(timeout);
 
     List<User> userList = timeoutDtoList.stream()

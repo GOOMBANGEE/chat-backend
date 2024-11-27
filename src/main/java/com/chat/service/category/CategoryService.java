@@ -15,13 +15,16 @@ import com.chat.dto.category.CategoryCreateResponseDto;
 import com.chat.exception.CategoryException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
+import com.chat.repository.category.CategoryQueryRepository;
 import com.chat.repository.category.CategoryRepository;
 import com.chat.repository.category.CategoryServerRoleRelationRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
+import com.chat.repository.channel.ChannelQueryRepository;
 import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerRoleRepository;
-import com.chat.repository.server.ServerRoleUserRelationRepository;
+import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
+import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -43,10 +46,13 @@ public class CategoryService {
   private final UserRepository userRepository;
   private final ServerRepository serverRepository;
   private final ServerRoleRepository serverRoleRepository;
+  private final ServerRoleUserRelationQueryRepository serverRoleUserRelationQueryRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
-  private final ServerRoleUserRelationRepository serverRoleUserRelationRepository;
+  private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final CategoryRepository categoryRepository;
+  private final CategoryQueryRepository categoryQueryRepository;
   private final ChannelRepository channelRepository;
+  private final ChannelQueryRepository channelQueryRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
@@ -76,7 +82,7 @@ public class CategoryService {
     ServerUserRelation serverUserRelation = serverUserRelationRepository
         .findByUserAndServerAndLogicDeleteFalse(user, server)
         .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
-    List<ServerRole> serverRoleUserRelation = serverRoleUserRelationRepository
+    List<ServerRole> serverRoleUserRelation = serverRoleUserRelationQueryRepository
         .fetchServerRoleListByServerAndUser(server, user);
 
     // 카테고리 생성 권한 확인
@@ -96,7 +102,7 @@ public class CategoryService {
     List<Long> allowUserIdList = requestDto.getAllowUserIdList();
 
     String name = requestDto.getName();
-    Double displayOrder = categoryRepository.fetchMaxDisplayOrder(server) * 2;
+    Double displayOrder = categoryQueryRepository.fetchMaxDisplayOrder(server) * 2;
     boolean open = allowRoleIdList == null && allowUserIdList == null;
 
     Category category = Category.builder()
@@ -110,7 +116,7 @@ public class CategoryService {
 
     // 공개 채널인 경우 서버에 참가중인 모든 유저를 CategoryUserRelation에 추가
     if (open) {
-      List<User> userList = serverUserRelationRepository.fetchUserListByServer(server);
+      List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
       List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
       userList.forEach(
           serverUser -> {
@@ -145,7 +151,7 @@ public class CategoryService {
       categoryServerRoleRelationRepository.saveAll(categoryServerRoleRelationList);
 
       // 서버에 해당 역할을 가진 유저 조회
-      List<User> userList = serverRoleUserRelationRepository
+      List<User> userList = serverRoleUserRelationQueryRepository
           .fetchUserByServerRoleIn(serverRoleList);
       List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
       // 해당 역할을 가진 유저들을 순회하면서 CategoryUserRelation 생성
@@ -214,11 +220,10 @@ public class CategoryService {
     // Category에 속해있는 channel들에 대해 displayOrder 재설정 + category null 설정
     List<Channel> channelList = channelRepository.findByCategory(category);
     final Double[] maxDisplayOrderCategoryNull = {
-        channelRepository.fetchMaxDisplayOrderByServerAndCategoryNull(server)};
+        channelQueryRepository.fetchMaxDisplayOrderByServerAndCategoryNull(server)};
     channelList.forEach(channel -> {
       channel.deleteCategory(maxDisplayOrderCategoryNull[0] * 2);
       maxDisplayOrderCategoryNull[0] = maxDisplayOrderCategoryNull[0] * 2;
-
     });
     channelRepository.saveAll(channelList);
 

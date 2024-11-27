@@ -20,16 +20,13 @@ public class UserAndServerAndChannelUserRelationForTimeoutCheckDto {
 
   private ChannelUserRelation channelUserRelation;
 
-  private Long channelUserRelationId;
-
   @QueryProjection
   @Builder
   public UserAndServerAndChannelUserRelationForTimeoutCheckDto(User user, Long userId,
-      Long serverId, ChannelUserRelation channelUserRelation, Long channelUserRelationId) {
+      Long serverId, ChannelUserRelation channelUserRelation) {
     this.user = user;
     this.userId = userId;
     this.serverId = serverId;
     this.channelUserRelation = channelUserRelation;
-    this.channelUserRelationId = channelUserRelationId;
   }
 }

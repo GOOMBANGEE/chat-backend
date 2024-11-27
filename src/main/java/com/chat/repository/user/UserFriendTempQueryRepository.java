@@ -10,15 +10,15 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class UserFriendTempRepositoryImpl implements UserFriendTempRepositoryCustom {
+public class UserFriendTempQueryRepository {
 
   private final JPAQueryFactory queryFactory;
-
   QUserFriendTemp qUserFriendTemp = QUserFriendTemp.userFriendTemp;
 
-  @Override
   public Optional<UserFriendTemp> fetchByUserAndFriend(User user, User friend) {
     return Optional.ofNullable(queryFactory
         .select(qUserFriendTemp)
@@ -42,7 +42,6 @@ public class UserFriendTempRepositoryImpl implements UserFriendTempRepositoryCus
   }
 
   // 친구 신청을 받았을때는 내가 friend에, 상대가 user에 위치해있다
-  @Override
   public List<UserInfoForFriendWaitingListResponseDto> fetchUserInfoByUser(User user) {
     return queryFactory
         .select(new QUserInfoForFriendWaitingListResponseDto(

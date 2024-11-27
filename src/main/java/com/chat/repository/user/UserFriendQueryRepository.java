@@ -10,15 +10,15 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
+public class UserFriendQueryRepository {
 
   private final JPAQueryFactory queryFactory;
-
   QUserFriend qUserFriend = QUserFriend.userFriend;
 
-  @Override
   public Optional<UserFriend> fetchByUserAndFriend(User user, User friend) {
     return Optional.ofNullable(queryFactory
         .select(qUserFriend)
@@ -41,7 +41,6 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
         .and(qUserFriend.user.eq(friend));
   }
 
-  @Override
   public List<UserFriend> fetchListByUserAndFriend(User user, User friend) {
     return queryFactory
         .select(qUserFriend)
@@ -50,7 +49,6 @@ public class UserFriendRepositoryImpl implements UserFriendRepositoryCustom {
         .fetch();
   }
 
-  @Override
   public List<UserInfoForFriendListResponseDto> fetchUserInfoDtoListByUser(
       User user) {
     return queryFactory

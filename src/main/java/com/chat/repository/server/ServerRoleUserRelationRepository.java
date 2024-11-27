@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ServerRoleUserRelationRepository extends
-    JpaRepository<ServerRoleUserRelation, Long>, ServerRoleUserRelationRepositoryCustom {
+    JpaRepository<ServerRoleUserRelation, Long> {
 
 }

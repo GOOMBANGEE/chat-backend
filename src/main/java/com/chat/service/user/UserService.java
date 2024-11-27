@@ -38,11 +38,13 @@ import com.chat.dto.user.UserInfoForFriendWaitingListResponseDto;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
 import com.chat.jwt.TokenProvider.TokenType;
-import com.chat.repository.channel.ChannelUserRelationRepository;
-import com.chat.repository.server.ServerUserRelationRepository;
-import com.chat.repository.user.NotificationRepository;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
+import com.chat.repository.server.ServerUserRelationQueryRepository;
+import com.chat.repository.user.NotificationQueryRepository;
 import com.chat.repository.user.RoleRepository;
+import com.chat.repository.user.UserFriendQueryRepository;
 import com.chat.repository.user.UserFriendRepository;
+import com.chat.repository.user.UserFriendTempQueryRepository;
 import com.chat.repository.user.UserFriendTempRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.repository.user.UserRoleRepository;
@@ -87,10 +89,12 @@ public class UserService {
   private final UserTempResetRepository userTempResetRepository;
   private final RoleRepository roleRepository;
   private final UserFriendRepository userFriendRepository;
+  private final UserFriendQueryRepository userFriendQueryRepository;
   private final UserFriendTempRepository userFriendTempRepository;
-  private final ServerUserRelationRepository serverUserRelationRepository;
-  private final ChannelUserRelationRepository channelUserRelationRepository;
-  private final NotificationRepository notificationRepository;
+  private final UserFriendTempQueryRepository userFriendTempQueryRepository;
+  private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
+  private final NotificationQueryRepository notificationQueryRepository;
 
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final TokenProvider tokenProvider;
@@ -273,7 +277,7 @@ public class UserService {
       SecurityContextHolder.getContext().setAuthentication(authentication);
 
       // 유저가 참여중인 서버의 id 리스트
-      List<Long> serverIdList = serverUserRelationRepository
+      List<Long> serverIdList = serverUserRelationQueryRepository
           .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
 
       // 3. 인증 정보로 JWT 토큰 생성
@@ -341,14 +345,14 @@ public class UserService {
     // 새로고침시 client => unsubscribe
     // server => subscribe
     // 따라서 server에서 subscribe로 판단하여 user/{userId}로 메시지 보내지않는 문제 발생
-    List<ChannelUserRelation> channelUserRelationList = channelUserRelationRepository
+    List<ChannelUserRelation> channelUserRelationList = channelUserRelationQueryRepository
         .fetchChannelUserRelationListBySubscribeTrueAndUser(user);
     channelUserRelationList.forEach((ChannelUserRelation::unsubscribe));
     channelUserRelationRepository.saveAll(channelUserRelationList);
 
     // user가 속해있는 서버에 접속알림
     Long userId = user.fetchUserIdForLoginAlert();
-    List<Long> serverIdList = serverUserRelationRepository
+    List<Long> serverIdList = serverUserRelationQueryRepository
         .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
     serverIdList.forEach(serverId -> CompletableFuture.runAsync(() -> {
       String serverUrl = SUB_SERVER + serverId;
@@ -461,7 +465,7 @@ public class UserService {
     // 바뀐 사용자명 각 서버에 메시지 전송
     // 유저가 참여중인 서버의 id 리스트
     Long userId = requestDto.getId();
-    List<Long> serverIdList = serverUserRelationRepository
+    List<Long> serverIdList = serverUserRelationQueryRepository
         .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
     serverIdList.forEach(
         serverId -> {
@@ -538,7 +542,7 @@ public class UserService {
 
     // 유저가 속해있는 serverList 에 메시지 발행
     Long userId = user.fetchUserIdForChangeAvatar();
-    List<Long> serverIdList = serverUserRelationRepository
+    List<Long> serverIdList = serverUserRelationQueryRepository
         .fetchServerIdListByUserAndServerDeleteFalseAndLogicDeleteFalse(user);
     serverIdList.forEach(serverId -> CompletableFuture.runAsync(() -> {
       String serverUrl = SUB_SERVER + serverId;
@@ -623,11 +627,11 @@ public class UserService {
     }
 
     // 이미 친구인 경우 오류
-    if (userFriendRepository.fetchByUserAndFriend(user, friend).isPresent()) {
+    if (userFriendQueryRepository.fetchByUserAndFriend(user, friend).isPresent()) {
       throw new UserException(USER_ALREADY_FRIEND);
     }
     // 이미 신청하였다면 다시 메시지 보내지않음
-    if (userFriendTempRepository.fetchByUserAndFriend(user, friend).isPresent()) {
+    if (userFriendQueryRepository.fetchByUserAndFriend(user, friend).isPresent()) {
       throw new UserException(USER_ALREADY_SENT_REQUEST);
     }
 
@@ -662,7 +666,7 @@ public class UserService {
     // 유저검색
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-    List<UserInfoForFriendWaitingListResponseDto> waitingList = userFriendTempRepository
+    List<UserInfoForFriendWaitingListResponseDto> waitingList = userFriendTempQueryRepository
         .fetchUserInfoByUser(user);
 
     return FriendWaitingListResponseDto.builder()
@@ -676,7 +680,7 @@ public class UserService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
-    List<UserInfoForFriendListResponseDto> userInfoList = userFriendRepository
+    List<UserInfoForFriendListResponseDto> userInfoList = userFriendQueryRepository
         .fetchUserInfoDtoListByUser(user);
     return FriendListResponseDto.builder()
         .friendList(userInfoList)
@@ -695,7 +699,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 존재하는 요청인지 확인
-    UserFriendTemp userFriendTemp = userFriendTempRepository.fetchByUserAndFriend(user, friend)
+    UserFriendTemp userFriendTemp = userFriendTempQueryRepository.fetchByUserAndFriend(user, friend)
         .orElseThrow(() -> new UserException(USER_FRIEND_TEMP_NOT_FOUND));
 
     // 등록
@@ -741,7 +745,7 @@ public class UserService {
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
     // 존재하는 요청인지 확인
-    UserFriendTemp userFriendTemp = userFriendTempRepository.fetchByUserAndFriend(user, friend)
+    UserFriendTemp userFriendTemp = userFriendTempQueryRepository.fetchByUserAndFriend(user, friend)
         .orElseThrow(() -> new UserException(USER_FRIEND_TEMP_NOT_FOUND));
 
     // 삭제
@@ -780,9 +784,9 @@ public class UserService {
   public GetNotificationResponseDto getNotification() {
     String email = customUserDetailsService.getEmailByUserDetails();
 
-    List<NotificationDirectMessageInfoDto> notificationDirectMessageInfoDtoList = notificationRepository
+    List<NotificationDirectMessageInfoDto> notificationDirectMessageInfoDtoList = notificationQueryRepository
         .fetchNotificationInfoDirectMessageDtoByUserEmail(email);
-    List<NotificationServerInfoDto> notificationServerInfoDtoList = notificationRepository
+    List<NotificationServerInfoDto> notificationServerInfoDtoList = notificationQueryRepository
         .fetchNotificationServerInfoDtoByUserEmail(email);
 
     return GetNotificationResponseDto.builder()

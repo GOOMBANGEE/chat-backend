@@ -25,13 +25,16 @@ import com.chat.exception.ChatException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.repository.category.CategoryRepository;
+import com.chat.repository.channel.ChannelQueryRepository;
 import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.channel.ChannelServerRoleRelationRepository;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerRoleRepository;
-import com.chat.repository.server.ServerRoleUserRelationRepository;
+import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
+import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
 import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
@@ -54,11 +57,14 @@ public class ChannelService {
   private final ServerRepository serverRepository;
   private final ServerRoleRepository serverRoleRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
-  private final ServerRoleUserRelationRepository serverRoleUserRelationRepository;
+  private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
+  private final ServerRoleUserRelationQueryRepository serverRoleUserRelationQueryRepository;
   private final CategoryRepository categoryRepository;
   private final ChannelRepository channelRepository;
+  private final ChannelQueryRepository channelQueryRepository;
   private final ChannelServerRoleRelationRepository channelServerRoleRelationRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final ChatRepository chatRepository;
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
@@ -95,7 +101,7 @@ public class ChannelService {
       Long userId = requestDto.getUserId();
       User mentionedUser = userRepository.findByIdAndLogicDeleteFalse(userId)
           .orElseThrow(() -> new UserException(USER_UNREGISTERED));
-      if (channelUserRelationRepository
+      if (channelUserRelationQueryRepository
           .searchDirectMessageChannel(user, mentionedUser)
           .isPresent()) {
         throw new ChannelException(CHANNEL_ALREADY_EXIST);
@@ -160,7 +166,7 @@ public class ChannelService {
       ServerUserRelation serverUserRelation = serverUserRelationRepository
           .findByUserAndServerAndLogicDeleteFalse(user, server)
           .orElseThrow(() -> new ServerException(SERVER_NOT_PARTICIPATED));
-      List<ServerRole> serverRoleUserRelation = serverRoleUserRelationRepository
+      List<ServerRole> serverRoleUserRelation = serverRoleUserRelationQueryRepository
           .fetchServerRoleListByServerAndUser(server, user);
 
       Long categoryId = requestDto.getCategoryId();
@@ -184,7 +190,7 @@ public class ChannelService {
       List<Long> allowUserIdList = requestDto.getAllowUserIdList();
 
       String name = requestDto.getName();
-      Double displayOrder = channelRepository.fetchMaxDisplayOrderByCategory(category) * 2;
+      Double displayOrder = channelQueryRepository.fetchMaxDisplayOrderByCategory(category) * 2;
       boolean open = allowRoleIdList == null && allowUserIdList == null;
 
       Channel channel = Channel.builder()
@@ -198,7 +204,7 @@ public class ChannelService {
 
       // 공개 채널인 경우 서버에 참가중인 모든 유저를 ChannelUserRelation에 추가
       if (open) {
-        List<User> userList = serverUserRelationRepository.fetchUserListByServer(server);
+        List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
         List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
         userList.forEach(
             serverUser -> {
@@ -233,7 +239,7 @@ public class ChannelService {
         channelServerRoleRelationRepository.saveAll(channelServerRoleRelationList);
 
         // 서버에 해당 역할을 가진 유저 조회
-        List<User> userList = serverRoleUserRelationRepository
+        List<User> userList = serverRoleUserRelationQueryRepository
             .fetchUserByServerRoleIn(serverRoleList);
         List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
         // 해당 역할을 가진 유저들을 순회하면서 ChannelUserRelation 생성
@@ -332,12 +338,12 @@ public class ChannelService {
 
       // 서버에 속한 모든 유저 ChannelUserRelation 등록 (기존에 등록되어있는 유저는 제외)
       // 이미 ChannelUserRelation에 등록된 유저 조회
-      List<User> existingUsers = channelUserRelationRepository.fetchUserListByChannel(channel);
+      List<User> existingUsers = channelUserRelationQueryRepository.fetchUserListByChannel(channel);
 
       // 서버에 등록된 모든 유저 조회
       Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
           .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
-      List<User> userList = serverUserRelationRepository.fetchUserListByServer(server);
+      List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
 
       // 기존에 등록된 유저를 제외한 나머지 유저
       List<User> usersToAdd = userList.stream()
@@ -418,7 +424,7 @@ public class ChannelService {
   @Transactional
   public void read(Long channelId, Long chatId) {
     String email = customUserDetailsService.getEmailByUserDetails();
-    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationRepository
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationQueryRepository
         .fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail
             (null, channelId, email);
     User user = channelUserRelationInfoDto.getUser();

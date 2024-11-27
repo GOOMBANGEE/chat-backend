@@ -17,9 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class ChatRepositoryImpl implements ChatRepositoryCustom {
+public class ChatQueryRepository {
 
   private final JPAQueryFactory queryFactory;
 
@@ -49,8 +51,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     );
   }
 
-
-  @Override
   public List<ChatInfoDto> fetchChatInfoDtoListByChannelId(Long channelId) {
     return queryFactory
         .select(chatInfoDtoProjection())
@@ -71,7 +71,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return qChat.logicDelete.eq(Boolean.FALSE);
   }
 
-  @Override
   public List<ChatInfoDto> fetchChatInfoDtoListByChannelIdAndChatId(Long channelId, Long chatId) {
     return queryFactory
         .select(chatInfoDtoProjection())
@@ -88,7 +87,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return isEmpty(chatId) ? null : qChat.id.lt(chatId);
   }
 
-  @Override
   public Page<ChatInfoDto> searchChatInfoDtoListDefault(Channel channel, String keyword,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
@@ -127,7 +125,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return qChat.enter.isFalse();
   }
 
-  @Override
   public Page<ChatInfoDto> searchChatInfoDtoListByUsername(Channel channel, String username,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
@@ -161,7 +158,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return qChat.user.username.like("%" + username + "%");
   }
 
-  @Override
   public Page<ChatInfoDto> searchChatInfoDtoListByMessage(Channel channel, String message,
       Pageable pageable) {
     List<ChatInfoDto> content = queryFactory
@@ -195,7 +191,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     return qChat.message.like("%" + message + "%");
   }
 
-  @Override
   public Page<ChatInfoDto> searchChatInfoDtoListByUsernameAndMessage(Channel channel,
       String username,
       String message, Pageable pageable) {
@@ -232,7 +227,6 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         .and(qChat.message.like("%" + message + "%"));
   }
 
-  @Override
   public ChatReferenceInfoForSendMessageResponse fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(
       Long chatId, Channel channel) {
     return queryFactory

@@ -25,7 +25,9 @@ import com.chat.exception.ChatException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.repository.channel.ChannelRepository;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
+import com.chat.repository.chat.ChatQueryRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
@@ -73,7 +75,9 @@ public class ChatService {
   private final CustomUserDetailsService customUserDetailsService;
   private final ChannelRepository channelRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final ChatRepository chatRepository;
+  private final ChatQueryRepository chatQueryRepository;
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
 
@@ -178,7 +182,7 @@ public class ChatService {
     );
 
     // 접속해있지만, 채널에 연결되어있지않은 유저에게 /user/{userId}로 메시지 발송
-    List<Long> userIdList = channelUserRelationRepository
+    List<Long> userIdList = channelUserRelationQueryRepository
         .fetchUserIdListWhoConnectedButNotSubscribe(channel);
     userIdList.forEach(userIdInList -> {
       String userUrl = SUB_USER + userIdInList;
@@ -203,7 +207,7 @@ public class ChatService {
 
   private ChannelUserRelationInfoDto validChannelUserRelation(Long serverId, Long channelId,
       String email) {
-    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationRepository
+    ChannelUserRelationInfoDto channelUserRelationInfoDto = channelUserRelationQueryRepository
         .fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail
             (serverId, channelId, email);
     User user = channelUserRelationInfoDto.getUser();
@@ -418,7 +422,7 @@ public class ChatService {
     Long chatReferenceId = messageDto.getChatReference();
     ChatInfoDto chatReferenceInfoDto = null;
     if (chatReferenceId != null) {
-      ChatReferenceInfoForSendMessageResponse chatReferenceInfo = chatRepository
+      ChatReferenceInfoForSendMessageResponse chatReferenceInfo = chatQueryRepository
           .fetchChatReferenceInfoForSendMessageResponseByChatIdAndChannel(chatReferenceId, channel);
 
       User mentionedUser = chatReferenceInfo.getUser();
@@ -485,7 +489,8 @@ public class ChatService {
     validChannelUserRelation(null, channelId, email);
 
     // 최근 50개 fetch
-    List<ChatInfoDto> chatInfoDtoList = chatRepository.fetchChatInfoDtoListByChannelId(channelId);
+    List<ChatInfoDto> chatInfoDtoList = chatQueryRepository
+        .fetchChatInfoDtoListByChannelId(channelId);
 
     return ChatListResponseDto.builder()
         .chatList(chatInfoDtoList)
@@ -498,7 +503,7 @@ public class ChatService {
     validChannelUserRelation(null, channelId, email);
 
     // 주어진 chatId의 앞50개 fetch
-    List<ChatInfoDto> chatInfoDtoList = chatRepository
+    List<ChatInfoDto> chatInfoDtoList = chatQueryRepository
         .fetchChatInfoDtoListByChannelIdAndChatId(channelId, chatId);
 
     return ChatListResponseDto.builder()
@@ -546,23 +551,23 @@ public class ChatService {
 
     if (!isEmpty(keyword)) {
       // 검색 기본쿼리
-      chatPage = chatRepository.searchChatInfoDtoListDefault(channel, keyword, pageable);
+      chatPage = chatQueryRepository.searchChatInfoDtoListDefault(channel, keyword, pageable);
     }
 
     if (isEmpty(keyword) && !isEmpty(username) && !isEmpty(message)) {
       // 둘을 검색하는 쿼리
-      chatPage = chatRepository.searchChatInfoDtoListByUsernameAndMessage(channel, username,
+      chatPage = chatQueryRepository.searchChatInfoDtoListByUsernameAndMessage(channel, username,
           message, pageable);
     }
 
     if (isEmpty(keyword) && !isEmpty(username) && isEmpty(message)) {
       // 유저명으로만 검색
-      chatPage = chatRepository.searchChatInfoDtoListByUsername(channel, username, pageable);
+      chatPage = chatQueryRepository.searchChatInfoDtoListByUsername(channel, username, pageable);
     }
 
     if (isEmpty(keyword) && isEmpty(username) && !isEmpty(message)) {
       // 내용만으로 검색
-      chatPage = chatRepository.searchChatInfoDtoListByMessage(channel, message, pageable);
+      chatPage = chatQueryRepository.searchChatInfoDtoListByMessage(channel, message, pageable);
     }
     assert chatPage != null;
     validatePage(page, chatPage);

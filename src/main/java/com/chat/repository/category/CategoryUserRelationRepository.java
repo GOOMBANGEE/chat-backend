@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CategoryUserRelationRepository extends JpaRepository<CategoryUserRelation, Long>,
-    CategoryUserRelationRepositoryCustom {
+public interface CategoryUserRelationRepository extends JpaRepository<CategoryUserRelation, Long> {
 
   List<CategoryUserRelation> findByCategory(Category category);
 }

@@ -6,8 +6,9 @@ import com.chat.exception.ChannelException;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
 import com.chat.jwt.TokenProvider;
+import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
-import com.chat.repository.server.ServerUserRelationRepository;
+import com.chat.repository.server.ServerUserRelationQueryRepository;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SubscriptionInterceptor implements ChannelInterceptor {
 
-  private final ServerUserRelationRepository serverUserRelationRepository;
+  private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
 
   private final TokenProvider tokenProvider;
 
@@ -123,7 +125,7 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     String accessToken = this.extractAccessToken(accessor);
     Long userIdFromToken = tokenProvider.getUserIdFromToken(accessToken);
 
-    if (serverUserRelationRepository
+    if (serverUserRelationQueryRepository
         .fetchServerUserRelationByServerIdAndUserId(serverId, userIdFromToken)
         .isEmpty()) {
       throw new ServerException(SERVER_NOT_PARTICIPATED);
@@ -139,7 +141,7 @@ public class SubscriptionInterceptor implements ChannelInterceptor {
     // 기존방식 -> 특정유저, 특정역할에 대해서 검색
     // 개선방안 -> ChannelUserRelation에 모든 채널-유저 정보가 담겨있어서 해당 엔티티가 존재하는지 검색
 
-    ChannelUserRelation channelUserRelation = channelUserRelationRepository
+    ChannelUserRelation channelUserRelation = channelUserRelationQueryRepository
         .fetchChannelUserRelationByChannelIdAndUserId(channelId, userIdFromToken)
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_PARTICIPATED));
     channelUserRelation.subscribe();

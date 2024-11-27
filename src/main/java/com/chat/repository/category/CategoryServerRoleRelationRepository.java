@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CategoryServerRoleRelationRepository extends
-    JpaRepository<CategoryServerRoleRelation, Long>, CategoryServerRoleRelationRepositoryCustom {
+    JpaRepository<CategoryServerRoleRelation, Long> {
 
   List<CategoryServerRoleRelation> findByCategory(Category category);
 }
