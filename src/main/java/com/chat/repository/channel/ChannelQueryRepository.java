@@ -11,7 +11,12 @@ import com.chat.dto.channel.ChannelRegistrationDto;
 import com.chat.dto.channel.QChannelRegistrationDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -19,6 +24,8 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class ChannelQueryRepository {
 
+  @PersistenceContext
+  private EntityManager entityManager;
   private final JPAQueryFactory queryFactory;
   QChannel qChannel = QChannel.channel;
 
@@ -77,5 +84,35 @@ public class ChannelQueryRepository {
 
   private BooleanExpression categoryNull() {
     return qChannel.category.isNull();
+  }
+
+  public List<Long> findChannelIdList(Long serverId, Long categoryId) {
+    return queryFactory
+        .select(qChannel.id)
+        .from(qChannel)
+        .where(serverIdEq(serverId), categoryIdEq(categoryId))
+        .fetch();
+  }
+
+  private BooleanExpression serverIdEq(Long serverId) {
+    return qChannel.server.id.eq(serverId);
+  }
+
+  private BooleanExpression categoryIdEq(Long categoryId) {
+    return qChannel.category.id.eq(categoryId);
+  }
+
+  public void batchUpdateDisplayOrders(Map<Long, Double> channelIdAndDisplayOrderMap) {
+    StringBuilder queryBuilder = new StringBuilder("UPDATE channel SET display_order = CASE id ");
+    List<Long> channelIdList = new ArrayList<>();
+    channelIdAndDisplayOrderMap.forEach((id, displayOrder) -> {
+      queryBuilder.append("WHEN ").append(id).append(" THEN ").append(displayOrder).append(" ");
+      channelIdList.add(id);
+    });
+    queryBuilder.append("END WHERE id IN (:channelIdList)");
+
+    Query query = entityManager.createNativeQuery(queryBuilder.toString());
+    query.setParameter("channelIdList", channelIdList);
+    query.executeUpdate();
   }
 }

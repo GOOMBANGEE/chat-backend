@@ -7,7 +7,6 @@ import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
-import com.chat.domain.user.Notification;
 import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
@@ -36,7 +35,7 @@ import com.chat.repository.server.ServerRoleRepository;
 import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
-import com.chat.repository.user.NotificationRepository;
+import com.chat.repository.user.NotificationQueryRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -66,7 +65,7 @@ public class ChannelService {
   private final ChannelUserRelationRepository channelUserRelationRepository;
   private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final ChatRepository chatRepository;
-  private final NotificationRepository notificationRepository;
+  private final NotificationQueryRepository notificationQueryRepository;
   private final UserRepository userRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
@@ -443,11 +442,7 @@ public class ChannelService {
     // dm channel인 경우, notification read처리
     if (channel.isDirectMessageChannel()) {
       // 채널, 유저에 해당하는 notification을 모두 찾아서 read 처리
-      List<Notification> notificationList = notificationRepository.findByChannelAndMentionedUserAndIsReadFalse(
-          channel, user);
-
-      notificationList.forEach(Notification::read);
-      notificationRepository.saveAll(notificationList);
+      notificationQueryRepository.bulkUpdateRead(channelId, email);
     }
   }
 }

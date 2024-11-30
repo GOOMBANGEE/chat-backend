@@ -215,6 +215,18 @@ public class ChannelUserRelationQueryRepository {
     return qUser.lastLogin.before(time);
   }
 
+  public void bulkUpdateUnsubscribe(List<ChannelUserRelation> channelUserRelationList) {
+    queryFactory
+        .update(qChannelUserRelation)
+        .set(qChannelUserRelation.subscribe, false)
+        .where(channelIdIn(channelUserRelationList), logicDeleteFalse())
+        .execute();
+  }
+
+  private BooleanExpression channelIdIn(List<ChannelUserRelation> channelUserRelationList) {
+    return qChannelUserRelation.in(channelUserRelationList);
+  }
+
   public void bulkDeleteByServerIdAndEmail(Long serverId, String email) {
     queryFactory
         .delete(qChannelUserRelation)

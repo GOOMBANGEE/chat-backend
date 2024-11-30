@@ -3,7 +3,6 @@ package com.chat.service.category;
 import com.chat.domain.category.Category;
 import com.chat.domain.category.CategoryServerRoleRelation;
 import com.chat.domain.category.CategoryUserRelation;
-import com.chat.domain.channel.Channel;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
@@ -21,7 +20,6 @@ import com.chat.repository.category.CategoryServerRoleRelationRepository;
 import com.chat.repository.category.CategoryUserRelationQueryRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
 import com.chat.repository.channel.ChannelQueryRepository;
-import com.chat.repository.channel.ChannelRepository;
 import com.chat.repository.server.ServerRepository;
 import com.chat.repository.server.ServerRoleRepository;
 import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
@@ -32,7 +30,9 @@ import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -55,7 +55,6 @@ public class CategoryService {
   private final CategoryUserRelationRepository categoryUserRelationRepository;
   private final CategoryUserRelationQueryRepository categoryUserRelationQueryRepository;
   private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
-  private final ChannelRepository channelRepository;
   private final ChannelQueryRepository channelQueryRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
@@ -220,14 +219,15 @@ public class CategoryService {
     categoryRepository.save(category);
 
     // Category에 속해있는 channel들에 대해 displayOrder 재설정 + category null 설정
-    List<Channel> channelList = channelRepository.findByCategory(category);
+    List<Long> channelIdList = channelQueryRepository.findChannelIdList(serverId, categoryId);
     final Double[] maxDisplayOrderCategoryNull = {
         channelQueryRepository.fetchMaxDisplayOrderByServerAndCategoryNull(server)};
-    channelList.forEach(channel -> {
-      channel.deleteCategory(maxDisplayOrderCategoryNull[0] * 2);
+    Map<Long, Double> map = new HashMap<>();
+    channelIdList.forEach(id -> {
+      map.put(id, maxDisplayOrderCategoryNull[0] * 2);
       maxDisplayOrderCategoryNull[0] = maxDisplayOrderCategoryNull[0] * 2;
     });
-    channelRepository.saveAll(channelList);
+    channelQueryRepository.batchUpdateDisplayOrders(map);
 
     // CategoryUserRelation 모두 삭제
     categoryUserRelationQueryRepository.bulkDeleteByCategoryId(categoryId);

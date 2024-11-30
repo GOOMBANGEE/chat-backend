@@ -3,12 +3,11 @@ package com.chat.service.user;
 import static java.util.stream.Collectors.toList;
 
 import com.chat.domain.channel.ChannelUserRelation;
-import com.chat.domain.user.User;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
 import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
 import com.chat.repository.channel.ChannelUserRelationQueryRepository;
-import com.chat.repository.channel.ChannelUserRelationRepository;
+import com.chat.repository.user.UserRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserTimeoutScheduler {
 
-  private final ChannelUserRelationRepository channelUserRelationRepository;
+  private final UserRepository userRepository;
   private final ChannelUserRelationQueryRepository channelUserRelationQueryRepository;
   private final SimpMessagingTemplate messagingTemplate;
 
@@ -48,15 +47,22 @@ public class UserTimeoutScheduler {
     List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> timeoutDtoList = channelUserRelationQueryRepository
         .fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(timeout);
 
-    List<User> userList = timeoutDtoList.stream()
-        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUser)
-        .distinct().toList();
+    // 해당되는 항목 없는경우 쿼리가 나가지않도록 설정
+    if (timeoutDtoList.isEmpty()) {
+      return;
+    }
+
+    // batch update
+    List<Long> userIdList = timeoutDtoList.stream()
+        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUserId)
+        .distinct()
+        .toList();
     List<ChannelUserRelation> channelUserRelationList = timeoutDtoList.stream()
         .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getChannelUserRelation)
         .toList();
+    userRepository.bulkUpdateOffline(userIdList);
+    channelUserRelationQueryRepository.bulkUpdateUnsubscribe(channelUserRelationList);
 
-    userList.forEach(User::updateOffline);
-    channelUserRelationList.forEach(ChannelUserRelation::unsubscribe);
     // 유저 오프라인 메시지 pub
     // 유저id를 기준으로 서버id리스트로 묶어줌
     Map<Long, List<Long>> userServerMap = timeoutDtoList.stream()

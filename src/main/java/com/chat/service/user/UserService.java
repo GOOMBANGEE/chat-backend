@@ -347,8 +347,7 @@ public class UserService {
     // 따라서 server에서 subscribe로 판단하여 user/{userId}로 메시지 보내지않는 문제 발생
     List<ChannelUserRelation> channelUserRelationList = channelUserRelationQueryRepository
         .fetchChannelUserRelationListBySubscribeTrueAndUser(user);
-    channelUserRelationList.forEach((ChannelUserRelation::unsubscribe));
-    channelUserRelationRepository.saveAll(channelUserRelationList);
+    channelUserRelationQueryRepository.bulkUpdateUnsubscribe(channelUserRelationList);
 
     // user가 속해있는 서버에 접속알림
     Long userId = user.fetchUserIdForLoginAlert();

@@ -677,6 +677,11 @@ public class ServerService {
       server.logicDelete();
       serverRepository.save(server);
 
+      // 나간 유저는 CategoryUserRelation에서 삭제
+      categoryUserRelationQueryRepository.bulkDeleteByServerIdAndEmail(serverId, email);
+      // 나간 유저는 ChannelUserRelation에서 삭제
+      channelUserRelationQueryRepository.bulkDeleteByServerIdAndEmail(serverId, email);
+
       // stomp pub
       String serverUrl = SUB_SERVER + serverId;
       MessageDto newMessageDto = MessageDto.builder()

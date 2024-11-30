@@ -73,4 +73,16 @@ public class NotificationQueryRepository {
   private BooleanExpression readFalse() {
     return qNotification.isRead.isFalse();
   }
+
+  public void bulkUpdateRead(Long channelId, String email) {
+    queryFactory
+        .update(qNotification)
+        .set(qNotification.isRead, true)
+        .where(channelIdEq(channelId), mentionedUserEmailEq(email))
+        .execute();
+  }
+
+  private BooleanExpression channelIdEq(Long channelId) {
+    return qNotification.channel.id.eq(channelId);
+  }
 }
