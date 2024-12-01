@@ -12,8 +12,9 @@ import com.chat.dto.channel.ChannelRegistrationDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.channel.QChannelInfoDto;
 import com.chat.dto.channel.QChannelUserRelationInfoDto;
-import com.chat.dto.user.QUserAndServerAndChannelUserRelationForTimeoutCheckDto;
-import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
+import com.chat.dto.user.QTimeoutDto;
+import com.chat.dto.user.TimeoutDto;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.sql.PreparedStatement;
@@ -104,7 +105,7 @@ public class ChannelUserRelationQueryRepository {
             qChannelUserRelation.lastReadMessageId,
             qChannelUserRelation.channel.lastMessageId))
         .from(qChannelUserRelation)
-        .where(userEq(user), logicDeleteFalse())
+        .where(userEq(user), channelLogicDeleteFalse())
         .fetch();
   }
 
@@ -112,7 +113,7 @@ public class ChannelUserRelationQueryRepository {
     return isEmpty(user) ? null : qChannelUserRelation.user.eq(user);
   }
 
-  private BooleanExpression logicDeleteFalse() {
+  private BooleanExpression channelLogicDeleteFalse() {
     return qChannelUserRelation.channel.logicDelete.isFalse();
   }
 
@@ -130,7 +131,7 @@ public class ChannelUserRelationQueryRepository {
             qChannelUserRelation.userDirectMessage.username,
             qChannelUserRelation.userDirectMessage.avatarImageSmall))
         .from(qChannelUserRelation)
-        .where(userEq(user), logicDeleteFalse())
+        .where(userEq(user), channelLogicDeleteFalse())
         .fetch();
   }
 
@@ -138,7 +139,7 @@ public class ChannelUserRelationQueryRepository {
     return queryFactory
         .select(qChannelUserRelation.user)
         .from(qChannelUserRelation)
-        .where(channelEq(channel), logicDeleteFalse())
+        .where(channelEq(channel), channelLogicDeleteFalse())
         .fetch();
   }
 
@@ -190,18 +191,26 @@ public class ChannelUserRelationQueryRepository {
   }
 
   // 등록된 상태, 최근 timeout 시간안에 갱신되지않은 상태, online 상태 -> offline 메시지 발송이 되지않은 상태
-  public List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(
+  public List<TimeoutDto> fetchTimeoutDto(
       LocalDateTime time) {
     return queryFactory
-        .select(new QUserAndServerAndChannelUserRelationForTimeoutCheckDto(
+        .select(new QTimeoutDto(
             qChannelUserRelation.user,
             qChannelUserRelation.user.id,
             qChannelUserRelation.channel.server.id,
             qChannelUserRelation
         ))
         .from(qChannelUserRelation)
-        .where(logicDeleteFalse(), timeoutTrue(time), userOnlineTrue(), subscribeTrue())
+        .where(timeoutBooleanBuilder(time))
         .fetch();
+  }
+
+  private BooleanBuilder timeoutBooleanBuilder(LocalDateTime time) {
+    return new BooleanBuilder()
+        .and(timeoutTrue(time))
+        .and(subscribeTrue())
+        .and(channelLogicDeleteFalse())
+        .or(userOnlineTrue());
   }
 
   private BooleanExpression timeoutTrue(LocalDateTime time) {
@@ -212,7 +221,7 @@ public class ChannelUserRelationQueryRepository {
     queryFactory
         .update(qChannelUserRelation)
         .set(qChannelUserRelation.subscribe, false)
-        .where(channelIdIn(channelUserRelationList), logicDeleteFalse())
+        .where(channelIdIn(channelUserRelationList), channelLogicDeleteFalse())
         .execute();
   }
 

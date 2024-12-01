@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserAndServerAndChannelUserRelationForTimeoutCheckDto {
+public class TimeoutDto {
 
   private User user;
 
@@ -22,7 +22,7 @@ public class UserAndServerAndChannelUserRelationForTimeoutCheckDto {
 
   @QueryProjection
   @Builder
-  public UserAndServerAndChannelUserRelationForTimeoutCheckDto(User user, Long userId,
+  public TimeoutDto(User user, Long userId,
       Long serverId, ChannelUserRelation channelUserRelation) {
     this.user = user;
     this.userId = userId;

@@ -5,7 +5,7 @@ import static java.util.stream.Collectors.toList;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.dto.MessageDto;
 import com.chat.dto.MessageDto.MessageType;
-import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
+import com.chat.dto.user.TimeoutDto;
 import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.user.UserRepository;
 import java.time.Duration;
@@ -44,8 +44,8 @@ public class UserTimeoutScheduler {
     LocalDateTime now = LocalDateTime.now(ZoneId.of(timeZone));
     LocalDateTime timeout = now.minus(TIMEOUT);
 
-    List<UserAndServerAndChannelUserRelationForTimeoutCheckDto> timeoutDtoList = channelUserRelationQueryRepository
-        .fetchUserAndServerAndChannelUserRelationForTimeoutCheckDto(timeout);
+    List<TimeoutDto> timeoutDtoList = channelUserRelationQueryRepository
+        .fetchTimeoutDto(timeout);
 
     // 해당되는 항목 없는경우 쿼리가 나가지않도록 설정
     if (timeoutDtoList.isEmpty()) {
@@ -54,11 +54,11 @@ public class UserTimeoutScheduler {
 
     // batch update
     List<Long> userIdList = timeoutDtoList.stream()
-        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUserId)
+        .map(TimeoutDto::getUserId)
         .distinct()
         .toList();
     List<ChannelUserRelation> channelUserRelationList = timeoutDtoList.stream()
-        .map(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getChannelUserRelation)
+        .map(TimeoutDto::getChannelUserRelation)
         .toList();
     userRepository.bulkUpdateOffline(userIdList);
     channelUserRelationQueryRepository.bulkUpdateUnsubscribe(channelUserRelationList);
@@ -67,9 +67,9 @@ public class UserTimeoutScheduler {
     // 유저id를 기준으로 서버id리스트로 묶어줌
     Map<Long, List<Long>> userServerMap = timeoutDtoList.stream()
         .collect(
-            Collectors.groupingBy(UserAndServerAndChannelUserRelationForTimeoutCheckDto::getUserId,
+            Collectors.groupingBy(TimeoutDto::getUserId,
                 Collectors.mapping(
-                    UserAndServerAndChannelUserRelationForTimeoutCheckDto::getServerId,
+                    TimeoutDto::getServerId,
                     toList())));
     userServerMap.forEach((userId, serverIdList) ->
         serverIdList.forEach(serverId ->
