@@ -6,6 +6,7 @@ import com.chat.domain.category.QCategory;
 import com.chat.domain.server.Server;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -30,5 +31,17 @@ public class CategoryQueryRepository {
 
   private BooleanExpression serverEq(Server server) {
     return isEmpty(server) ? null : qCategory.server.eq(server);
+  }
+
+  public List<Long> fetchIdListByServer(Long serverId) {
+    return queryFactory
+        .select(qCategory.id)
+        .from(qCategory)
+        .where(serverIdEq(serverId), logicDeleteFalse())
+        .fetch();
+  }
+
+  private BooleanExpression serverIdEq(Long serverId) {
+    return qCategory.server.id.eq(serverId);
   }
 }

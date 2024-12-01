@@ -2,7 +2,6 @@ package com.chat.service.channel;
 
 import com.chat.domain.category.Category;
 import com.chat.domain.channel.Channel;
-import com.chat.domain.channel.ChannelServerRoleRelation;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
@@ -31,7 +30,6 @@ import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatRepository;
 import com.chat.repository.server.ServerRepository;
-import com.chat.repository.server.ServerRoleRepository;
 import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
@@ -54,7 +52,6 @@ public class ChannelService {
 
   private final CustomUserDetailsService customUserDetailsService;
   private final ServerRepository serverRepository;
-  private final ServerRoleRepository serverRoleRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
   private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final ServerRoleUserRelationQueryRepository serverRoleUserRelationQueryRepository;
@@ -200,79 +197,13 @@ public class ChannelService {
           .category(category)
           .build();
       channelRepository.save(channel);
-
+      Long channelId = channel.getChannelIdForChannelCreate();
       // 공개 채널인 경우 서버에 참가중인 모든 유저를 ChannelUserRelation에 추가
       if (open) {
-        List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
-        List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-        userList.forEach(
-            serverUser -> {
-              ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
-                  .channel(channel)
-                  .user(serverUser)
-                  .readMessage(true)
-                  .writeMessage(true)
-                  .viewHistory(true)
-                  .build();
-              channelUserRelationList.add(channelUserRelation);
-            }
-        );
-        channelUserRelationRepository.saveAll(channelUserRelationList);
+        List<Long> userIdList = serverUserRelationQueryRepository.fetchUserIdListByServer(server);
+        channelUserRelationQueryRepository.bulkInsertChannelCreate(channelId, userIdList);
       }
 
-      if (allowRoleIdList != null) {
-        // 여러 역할 한번에 조회
-        List<ServerRole> serverRoleList = serverRoleRepository.findByIdInAndLogicDeleteFalse(
-            allowRoleIdList);
-        // 조회된 역할들 순회하면서 ChannelServerRoleRelation 생성
-        List<ChannelServerRoleRelation> channelServerRoleRelationList = serverRoleList.stream()
-            .map(serverRole -> ChannelServerRoleRelation.builder()
-                .channel(channel)
-                .serverRole(serverRole)
-                .readMessage(true)
-                .writeMessage(true)
-                .viewHistory(true)
-                .build())
-            .toList();
-        // 한번에 저장
-        channelServerRoleRelationRepository.saveAll(channelServerRoleRelationList);
-
-        // 서버에 해당 역할을 가진 유저 조회
-        List<User> userList = serverRoleUserRelationQueryRepository
-            .fetchUserByServerRoleIn(serverRoleList);
-        List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-        // 해당 역할을 가진 유저들을 순회하면서 ChannelUserRelation 생성
-        userList.forEach(serverRoleUser -> {
-          ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
-              .channel(channel)
-              .user(serverRoleUser)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .build();
-          channelUserRelationList.add(channelUserRelation);
-        });
-        channelUserRelationRepository.saveAll(channelUserRelationList);
-      }
-
-      if (allowUserIdList != null) {
-        // 여러 유저 한번에 조회
-        List<User> userList = userRepository.findByIdInAndLogicDeleteFalse(allowUserIdList);
-        // 조회된 유저들 순회하면서 ChannelUserRelation 생성
-        List<ChannelUserRelation> channelUserRelationList = userList.stream()
-            .map(userInList -> ChannelUserRelation.builder()
-                .channel(channel)
-                .user(userInList)
-                .readMessage(true)
-                .writeMessage(true)
-                .viewHistory(true)
-                .build())
-            .toList();
-        // 한번에 저장
-        channelUserRelationRepository.saveAll(channelUserRelationList);
-      }
-
-      Long channelId = channel.getChannelIdForChannelCreate();
       ChannelCreateResponseDto responseDto = ChannelCreateResponseDto.builder()
           .id(channelId)
           .name(name)
@@ -327,41 +258,6 @@ public class ChannelService {
         .orElseThrow(() -> new ChannelException(CHANNEL_NOT_FOUND));
 
     boolean open = requestDto.isOpen();
-    List<Long> allowRoleIdList = requestDto.getAllowRoleIdList();
-    List<Long> allowUserIdList = requestDto.getAllowUserIdList();
-    if (open && allowRoleIdList == null && allowUserIdList == null) {
-      // open 설정시 기존 ChannelServerRoleRelation 모두 삭제
-      channelServerRoleRelationRepository.bulkDeleteByChannelId(channelId);
-
-      // 서버에 속한 모든 유저 ChannelUserRelation 등록 (기존에 등록되어있는 유저는 제외)
-      // 이미 ChannelUserRelation에 등록된 유저 조회
-      List<User> existingUsers = channelUserRelationQueryRepository.fetchUserListByChannel(channel);
-
-      // 서버에 등록된 모든 유저 조회
-      Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
-          .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
-      List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
-
-      // 기존에 등록된 유저를 제외한 나머지 유저
-      List<User> usersToAdd = userList.stream()
-          .filter(user -> !existingUsers.contains(user))
-          .toList();
-
-      // 추가할 유저들에 대해 ChannelUserRelation 생성
-      List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-      usersToAdd.forEach(user -> {
-        ChannelUserRelation newRelation = ChannelUserRelation.builder()
-            .channel(channel)
-            .user(user)
-            .readMessage(true)
-            .writeMessage(true)
-            .viewHistory(true)
-            .build();
-        channelUserRelationList.add(newRelation);
-      });
-      channelUserRelationRepository.saveAll(channelUserRelationList);
-    }
-
     Long categoryId = requestDto.getCategoryId();
     Category category = null;
     if (categoryId != null) {

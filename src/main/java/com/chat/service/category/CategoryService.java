@@ -1,8 +1,6 @@
 package com.chat.service.category;
 
 import com.chat.domain.category.Category;
-import com.chat.domain.category.CategoryServerRoleRelation;
-import com.chat.domain.category.CategoryUserRelation;
 import com.chat.domain.server.Server;
 import com.chat.domain.server.ServerRole;
 import com.chat.domain.server.ServerUserRelation;
@@ -18,10 +16,8 @@ import com.chat.repository.category.CategoryQueryRepository;
 import com.chat.repository.category.CategoryRepository;
 import com.chat.repository.category.CategoryServerRoleRelationRepository;
 import com.chat.repository.category.CategoryUserRelationQueryRepository;
-import com.chat.repository.category.CategoryUserRelationRepository;
 import com.chat.repository.channel.ChannelQueryRepository;
 import com.chat.repository.server.ServerRepository;
-import com.chat.repository.server.ServerRoleRepository;
 import com.chat.repository.server.ServerRoleUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationQueryRepository;
 import com.chat.repository.server.ServerUserRelationRepository;
@@ -29,7 +25,6 @@ import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +41,11 @@ public class CategoryService {
   private final CustomUserDetailsService customUserDetailsService;
   private final UserRepository userRepository;
   private final ServerRepository serverRepository;
-  private final ServerRoleRepository serverRoleRepository;
   private final ServerRoleUserRelationQueryRepository serverRoleUserRelationQueryRepository;
   private final ServerUserRelationRepository serverUserRelationRepository;
   private final ServerUserRelationQueryRepository serverUserRelationQueryRepository;
   private final CategoryRepository categoryRepository;
   private final CategoryQueryRepository categoryQueryRepository;
-  private final CategoryUserRelationRepository categoryUserRelationRepository;
   private final CategoryUserRelationQueryRepository categoryUserRelationQueryRepository;
   private final CategoryServerRoleRelationRepository categoryServerRoleRelationRepository;
   private final ChannelQueryRepository channelQueryRepository;
@@ -114,79 +107,13 @@ public class CategoryService {
         .server(server)
         .build();
     categoryRepository.save(category);
-
+    Long categoryId = category.getCategoryIdForCategoryCreate();
     // 공개 채널인 경우 서버에 참가중인 모든 유저를 CategoryUserRelation에 추가
     if (open) {
-      List<User> userList = serverUserRelationQueryRepository.fetchUserListByServer(server);
-      List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
-      userList.forEach(
-          serverUser -> {
-            CategoryUserRelation categoryUserRelation = CategoryUserRelation.builder()
-                .category(category)
-                .user(serverUser)
-                .readMessage(true)
-                .writeMessage(true)
-                .viewHistory(true)
-                .build();
-            categoryUserRelationList.add(categoryUserRelation);
-          }
-      );
-      categoryUserRelationRepository.saveAll(categoryUserRelationList);
+      List<Long> userIdList = serverUserRelationQueryRepository.fetchUserIdListByServer(server);
+      categoryUserRelationQueryRepository.bulkInsertCategoryIdAndUserIdList(categoryId, userIdList);
     }
 
-    if (allowRoleIdList != null) {
-      // 여러 역할 한번에 조회
-      List<ServerRole> serverRoleList = serverRoleRepository.findByIdInAndLogicDeleteFalse(
-          allowRoleIdList);
-      // 조회된 역할들 순회하면서 CategoryServerRoleRelation 생성
-      List<CategoryServerRoleRelation> categoryServerRoleRelationList = serverRoleList.stream()
-          .map(serverRole -> CategoryServerRoleRelation.builder()
-              .category(category)
-              .serverRole(serverRole)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .build())
-          .toList();
-      // 한번에 저장
-      categoryServerRoleRelationRepository.saveAll(categoryServerRoleRelationList);
-
-      // 서버에 해당 역할을 가진 유저 조회
-      List<User> userList = serverRoleUserRelationQueryRepository
-          .fetchUserByServerRoleIn(serverRoleList);
-      List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
-      // 해당 역할을 가진 유저들을 순회하면서 CategoryUserRelation 생성
-      userList.forEach(serverRoleUser -> {
-        CategoryUserRelation categoryUserRelation = CategoryUserRelation.builder()
-            .category(category)
-            .user(serverRoleUser)
-            .readMessage(true)
-            .writeMessage(true)
-            .viewHistory(true)
-            .build();
-        categoryUserRelationList.add(categoryUserRelation);
-      });
-      categoryUserRelationRepository.saveAll(categoryUserRelationList);
-    }
-
-    if (allowUserIdList != null) {
-      // 여러 유저 한번에 조회
-      List<User> userList = userRepository.findByIdInAndLogicDeleteFalse(allowUserIdList);
-      // 조회된 유저들 순회하면서 CategoryUserRelation 생성
-      List<CategoryUserRelation> categoryUserRelationList = userList.stream()
-          .map(userInList -> CategoryUserRelation.builder()
-              .category(category)
-              .user(userInList)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .build())
-          .toList();
-      // 한번에 저장
-      categoryUserRelationRepository.saveAll(categoryUserRelationList);
-    }
-
-    Long categoryId = category.getCategoryIdForCategoryCreate();
     CategoryCreateResponseDto responseDto = CategoryCreateResponseDto.builder()
         .id(categoryId)
         .name(name)

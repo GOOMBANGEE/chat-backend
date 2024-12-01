@@ -79,8 +79,7 @@ public class ServerUserRelationQueryRepository {
   }
 
   // 서버에 속해있는 유저의 정보
-  public List<ServerUserInfoDto> fetchServerUserInfoDtoListByUserAndServer(
-      User user, Server server) {
+  public List<ServerUserInfoDto> fetchServerUserInfoDtoListByServer(Server server) {
     return queryFactory
         .select(
             new QServerUserInfoDto(
@@ -121,8 +120,8 @@ public class ServerUserRelationQueryRepository {
         .fetch();
   }
 
-  // serverIcon 배포용 server참가자 id list
-  public List<Long> fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(Server server) {
+  // server참가자 id list
+  public List<Long> fetchUserIdListByServer(Server server) {
     return queryFactory
         .select(qServerUserRelation.user.id)
         .from(qServerUserRelation)

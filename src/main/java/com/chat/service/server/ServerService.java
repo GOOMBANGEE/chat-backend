@@ -29,6 +29,7 @@ import com.chat.dto.server.ServerUserListResponseDto;
 import com.chat.dto.user.UserInfo;
 import com.chat.exception.ServerException;
 import com.chat.exception.UserException;
+import com.chat.repository.category.CategoryQueryRepository;
 import com.chat.repository.category.CategoryRepository;
 import com.chat.repository.category.CategoryUserRelationQueryRepository;
 import com.chat.repository.category.CategoryUserRelationRepository;
@@ -54,7 +55,6 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -105,6 +105,7 @@ public class ServerService {
   private static final String SUB_SERVER = "/sub/server/";
   private static final String SUB_CHANNEL = "/sub/channel/";
   private final ObjectMapper mapper = new ObjectMapper();
+  private final CategoryQueryRepository categoryQueryRepository;
 
   @Value("${server.front-url}")
   private String frontUrl;
@@ -344,7 +345,7 @@ public class ServerService {
           .build();
 
       List<Long> userIdList = serverUserRelationQueryRepository
-          .fetchUserIdListByServerAndServerDeleteFalseAndLogicDeleteFalse(server);
+          .fetchUserIdListByServer(server);
       userIdList.forEach(userId -> {
         String userUrl = SUB_USER + userId;
         TransactionSynchronizationManager.registerSynchronization(
@@ -417,9 +418,18 @@ public class ServerService {
     User user = userRepository.findByEmailAndLogicDeleteFalse(email)
         .orElseThrow(() -> new UserException(USER_UNREGISTERED));
 
+    UserInfo userInfo = user.fetchUserInfoForServerJoinResponse();
+    Long userId = userInfo.getId();
+    String username = userInfo.getUsername();
+
     ServerJoinInfoDto serverJoinInfoDto = serverQueryRepository
         .fetchServerInfoDtoByServerCode(code);
     Server server = serverJoinInfoDto.getServer();
+    Long channelId = serverJoinInfoDto.getChannelId();
+    Channel channel = serverJoinInfoDto.getChannel();
+    ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse(channelId);
+    LocalDateTime createTime = LocalDateTime.now(ZoneId.of(timeZone));
+    Long serverId = responseDto.getId();
 
     Optional<ServerUserRelation> serverUserRelation = serverUserRelationRepository.findServerUserRelationByUserAndServer(
         user, server);
@@ -449,52 +459,14 @@ public class ServerService {
     serverRepository.save(server);
 
     // server내의 open카테고리 등록설정
-    List<Category> categoryList = categoryRepository
-        .findByServer(server);
-    List<CategoryUserRelation> categoryUserRelationList = new ArrayList<>();
-    categoryList.forEach(
-        (category -> {
-          CategoryUserRelation categoryUserRelation = CategoryUserRelation.builder()
-              .category(category)
-              .user(user)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .build();
-
-          categoryUserRelationList.add(categoryUserRelation);
-        })
-    );
-    categoryUserRelationRepository.saveAll(categoryUserRelationList);
+    List<Long> categoryIdList = categoryQueryRepository.fetchIdListByServer(serverId);
+    categoryUserRelationQueryRepository.bulkInsertCategoryIdListAndUserId(categoryIdList, userId);
 
     // server내의 open채널 등록설정
     List<ChannelRegistrationDto> channelRegistrationDtoList = channelQueryRepository
         .fetchChannelRegistrationDtoListByServer(server);
-    List<ChannelUserRelation> channelUserRelationList = new ArrayList<>();
-    channelRegistrationDtoList.forEach(
-        (channelRegistrationDto -> {
-          Channel channel = channelRegistrationDto.getChannel();
-          Long lastMessageId = channelRegistrationDto.getLastMessageId();
+    channelUserRelationQueryRepository.bulkInsertServerJoin(channelRegistrationDtoList, userId);
 
-          ChannelUserRelation channelUserRelation = ChannelUserRelation.builder()
-              .channel(channel)
-              .user(user)
-              .readMessage(true)
-              .writeMessage(true)
-              .viewHistory(true)
-              .lastReadMessageId(lastMessageId)
-              .build();
-
-          channelUserRelationList.add(channelUserRelation);
-        })
-    );
-    channelUserRelationRepository.saveAll(channelUserRelationList);
-
-    // return 입장한 서버 id
-    Long channelId = serverJoinInfoDto.getChannelId();
-    ServerJoinResponseDto responseDto = server.getServerIdForServerJoinResponse(channelId);
-    Channel channel = serverJoinInfoDto.getChannel();
-    LocalDateTime createTime = LocalDateTime.now(ZoneId.of(timeZone));
     // 서버 입장 메시지 전송
     Chat chat = Chat.builder()
         .server(server)
@@ -504,13 +476,6 @@ public class ServerService {
         .createTime(createTime)
         .build();
     chatRepository.save(chat);
-
-    Long serverId = responseDto.getId();
-
-    UserInfo userInfo = user.fetchUserInfoForServerJoinResponse();
-    Long userId = userInfo.getId();
-    String username = userInfo.getUsername();
-
     String channelUrl = SUB_CHANNEL + channelId;
     MessageDto newMessageDto = chat
         .buildMessageDtoForSeverJoinResponse(serverId, channelId, userId, username);
@@ -698,14 +663,15 @@ public class ServerService {
     String email = customUserDetailsService.getEmailByUserDetails();
 
     // 해당 서버 참여자인지 확인
-    User user = userRepository.findByEmailAndLogicDeleteFalse(email)
-        .orElseThrow(() -> new UserException(USER_UNREGISTERED));
+    if (userRepository.findByEmailAndLogicDeleteFalse(email).isEmpty()) {
+      throw new UserException(USER_UNREGISTERED);
+    }
     Server server = serverRepository.findByIdAndLogicDeleteFalse(serverId)
         .orElseThrow(() -> new ServerException(SERVER_NOT_FOUND));
 
     // 서버에 속해있는 유저 정보
     List<ServerUserInfoDto> serverUserInfoDtoList = serverUserRelationQueryRepository
-        .fetchServerUserInfoDtoListByUserAndServer(user, server);
+        .fetchServerUserInfoDtoListByServer(server);
 
     if (serverUserInfoDtoList.isEmpty()) {
       throw new ServerException(SERVER_NOT_PARTICIPATED);

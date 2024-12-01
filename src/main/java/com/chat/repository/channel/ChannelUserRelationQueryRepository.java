@@ -5,10 +5,10 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
 import com.chat.domain.channel.QChannelUserRelation;
-import com.chat.domain.server.Server;
 import com.chat.domain.user.QUser;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
+import com.chat.dto.channel.ChannelRegistrationDto;
 import com.chat.dto.channel.ChannelUserRelationInfoDto;
 import com.chat.dto.channel.QChannelInfoDto;
 import com.chat.dto.channel.QChannelUserRelationInfoDto;
@@ -16,10 +16,15 @@ import com.chat.dto.user.QUserAndServerAndChannelUserRelationForTimeoutCheckDto;
 import com.chat.dto.user.UserAndServerAndChannelUserRelationForTimeoutCheckDto;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -27,6 +32,7 @@ import org.springframework.stereotype.Repository;
 public class ChannelUserRelationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
+  private final JdbcTemplate jdbcTemplate;
   QChannelUserRelation qChannelUserRelation = QChannelUserRelation.channelUserRelation;
   QUser qUser = QUser.user;
 
@@ -140,19 +146,6 @@ public class ChannelUserRelationQueryRepository {
     return isEmpty(channel) ? null : qChannelUserRelation.channel.eq(channel);
   }
 
-  public List<ChannelUserRelation> fetchChannelUserRelationListByServerAndUser
-      (Server server, User user) {
-    return queryFactory
-        .select(qChannelUserRelation)
-        .from(qChannelUserRelation)
-        .where(serverEq(server), userEq(user), logicDeleteFalse())
-        .fetch();
-  }
-
-  private BooleanExpression serverEq(Server server) {
-    return isEmpty(server) ? null : qChannelUserRelation.channel.server.eq(server);
-  }
-
   // 두 유저가 속해있는 dm채널이 있는지 확인
   public Optional<ChannelUserRelation> searchDirectMessageChannel(User user, User mentionedUser) {
     return Optional.ofNullable(queryFactory
@@ -239,5 +232,61 @@ public class ChannelUserRelationQueryRepository {
         .delete(qChannelUserRelation)
         .where(channelIdEq(channelId))
         .execute();
+  }
+
+  public void bulkInsertServerJoin(List<ChannelRegistrationDto> channelRegistrationDtoList,
+      Long userId) {
+    String sql = "INSERT INTO channel_user_relation "
+        + "(channel_id, user_id, read_message,write_message, view_history, last_read_message_id, subscribe) "
+        + "VALUES (?,?,?,?,?,?,?)";
+
+    jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+      @Override
+      public void setValues(@NonNull PreparedStatement ps, int i) throws SQLException {
+        Long channelId = channelRegistrationDtoList.get(i).getChannel();
+        Long lastMessageId = channelRegistrationDtoList.get(i).getLastMessageId();
+        ps.setLong(1, channelId); // channelId
+        ps.setLong(2, userId); // userId
+        ps.setBoolean(3, true); // readMessage
+        ps.setBoolean(4, true); // writeMessage
+        ps.setBoolean(5, true); // viewHistory
+        if (lastMessageId != null) {
+          ps.setLong(6, lastMessageId); // lastReadMessageId
+        } else {
+          ps.setNull(6, 0); // lastReadMessageId
+        }
+        ps.setBoolean(7, false); // subscribe
+      }
+
+      @Override
+      public int getBatchSize() {
+        return channelRegistrationDtoList.size();
+      }
+    });
+  }
+
+  public void bulkInsertChannelCreate(Long channelId, List<Long> userIdList) {
+    String sql = "INSERT INTO channel_user_relation "
+        + "(channel_id, user_id, read_message,write_message, view_history, last_read_message_id, subscribe) "
+        + "VALUES (?,?,?,?,?,?,?)";
+
+    jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+      @Override
+      public void setValues(@NonNull PreparedStatement ps, int i) throws SQLException {
+        Long userId = userIdList.get(i);
+        ps.setLong(1, channelId); // channelId
+        ps.setLong(2, userId); // userId
+        ps.setBoolean(3, true); // readMessage
+        ps.setBoolean(4, true); // writeMessage
+        ps.setBoolean(5, true); // viewHistory
+        ps.setNull(6, 0); // lastReadMessageId
+        ps.setBoolean(7, false); // subscribe
+      }
+
+      @Override
+      public int getBatchSize() {
+        return userIdList.size();
+      }
+    });
   }
 }

@@ -32,7 +32,7 @@ public class ChannelQueryRepository {
   public List<ChannelRegistrationDto> fetchChannelRegistrationDtoListByServer(Server server) {
     return queryFactory
         .select(new QChannelRegistrationDto(
-            qChannel,
+            qChannel.id,
             qChannel.lastMessageId
         ))
         .from(qChannel)
