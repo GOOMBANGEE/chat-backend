@@ -109,10 +109,12 @@ public class ChannelQueryRepository {
       queryBuilder.append("WHEN ").append(id).append(" THEN ").append(displayOrder).append(" ");
       channelIdList.add(id);
     });
-    queryBuilder.append("END WHERE id IN (:channelIdList)");
+    if (!channelIdList.isEmpty()) {
+      queryBuilder.append("END WHERE id IN (:channelIdList)");
 
-    Query query = entityManager.createNativeQuery(queryBuilder.toString());
-    query.setParameter("channelIdList", channelIdList);
-    query.executeUpdate();
+      Query query = entityManager.createNativeQuery(queryBuilder.toString());
+      query.setParameter("channelIdList", channelIdList);
+      query.executeUpdate();
+    }
   }
 }
