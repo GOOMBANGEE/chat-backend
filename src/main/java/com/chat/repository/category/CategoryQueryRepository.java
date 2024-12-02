@@ -33,7 +33,7 @@ public class CategoryQueryRepository {
     return isEmpty(server) ? null : qCategory.server.eq(server);
   }
 
-  public List<Long> fetchIdListByServer(Long serverId) {
+  public List<Long> fetchIdListByServerId(Long serverId) {
     return queryFactory
         .select(qCategory.id)
         .from(qCategory)

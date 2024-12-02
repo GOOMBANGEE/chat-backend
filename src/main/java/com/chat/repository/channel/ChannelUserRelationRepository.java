@@ -10,8 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ChannelUserRelationRepository extends JpaRepository<ChannelUserRelation, Long> {
 
-  List<ChannelUserRelation> findByChannel(Channel channel);
-
   List<ChannelUserRelation> findByChannelAndUserIn(Channel channel, List<User> userList);
 
   List<ChannelUserRelation> findBySubscribeTrue();

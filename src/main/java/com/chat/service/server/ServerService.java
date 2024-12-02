@@ -459,7 +459,7 @@ public class ServerService {
     serverRepository.save(server);
 
     // server내의 open카테고리 등록설정
-    List<Long> categoryIdList = categoryQueryRepository.fetchIdListByServer(serverId);
+    List<Long> categoryIdList = categoryQueryRepository.fetchIdListByServerId(serverId);
     categoryUserRelationQueryRepository.bulkInsertCategoryIdListAndUserId(categoryIdList, userId);
 
     // server내의 open채널 등록설정

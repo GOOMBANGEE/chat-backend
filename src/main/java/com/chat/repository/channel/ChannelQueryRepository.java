@@ -86,7 +86,7 @@ public class ChannelQueryRepository {
     return qChannel.category.isNull();
   }
 
-  public List<Long> findChannelIdList(Long serverId, Long categoryId) {
+  public List<Long> fetchChannelIdListByServerIdAndCategoryId(Long serverId, Long categoryId) {
     return queryFactory
         .select(qChannel.id)
         .from(qChannel)

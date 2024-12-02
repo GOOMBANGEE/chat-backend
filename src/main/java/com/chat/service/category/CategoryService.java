@@ -146,7 +146,8 @@ public class CategoryService {
     categoryRepository.save(category);
 
     // Category에 속해있는 channel들에 대해 displayOrder 재설정 + category null 설정
-    List<Long> channelIdList = channelQueryRepository.findChannelIdList(serverId, categoryId);
+    List<Long> channelIdList = channelQueryRepository
+        .fetchChannelIdListByServerIdAndCategoryId(serverId, categoryId);
     final Double[] maxDisplayOrderCategoryNull = {
         channelQueryRepository.fetchMaxDisplayOrderByServerAndCategoryNull(server)};
     Map<Long, Double> map = new HashMap<>();
