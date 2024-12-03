@@ -37,17 +37,4 @@ public class ServerRoleUserRelationQueryRepository {
   private BooleanExpression userEq(User user) {
     return isEmpty(user) ? null : qServerRoleUserRelation.user.eq(user);
   }
-
-  public List<User> fetchUserByServerRoleIn(List<ServerRole> serverRoleList) {
-    return queryFactory
-        .select(qServerRoleUserRelation.user)
-        .from(qServerRoleUserRelation)
-        .where(serverRoleIn(serverRoleList))
-        .distinct()
-        .fetch();
-  }
-
-  private BooleanExpression serverRoleIn(List<ServerRole> serverRoleList) {
-    return isEmpty(serverRoleList) ? null : qServerRoleUserRelation.serverRole.in(serverRoleList);
-  }
 }

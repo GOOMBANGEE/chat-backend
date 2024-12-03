@@ -2,6 +2,7 @@ package com.chat.repository.server;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
+import com.chat.domain.channel.QChannel;
 import com.chat.domain.server.QServer;
 import com.chat.dto.server.QServerJoinInfoDto;
 import com.chat.dto.server.ServerJoinInfoDto;
@@ -16,12 +17,14 @@ public class ServerQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QServer qServer = QServer.server;
+  QChannel qDefaultChannel = new QChannel("qDefaultChannel");
 
   public ServerJoinInfoDto fetchServerInfoDtoByServerCode(String code) {
     return queryFactory
         .select(new QServerJoinInfoDto(qServer, qServer.defaultChannel, qServer.defaultChannel.id))
         .from(qServer)
         .where(codeEq(code), logicDeleteFalse())
+        .join(qServer.defaultChannel, qDefaultChannel)
         .fetchOne();
   }
 

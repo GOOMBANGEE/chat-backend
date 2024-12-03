@@ -1,6 +1,10 @@
 package com.chat.repository.user;
 
+import com.chat.domain.channel.QChannel;
+import com.chat.domain.chat.QChat;
+import com.chat.domain.server.QServer;
 import com.chat.domain.user.QNotification;
+import com.chat.domain.user.QUser;
 import com.chat.dto.user.NotificationDirectMessageInfoDto;
 import com.chat.dto.user.NotificationServerInfoDto;
 import com.chat.dto.user.QNotificationDirectMessageInfoDto;
@@ -17,6 +21,10 @@ public class NotificationQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QNotification qNotification = QNotification.notification;
+  QServer qServer = QServer.server;
+  QChannel qChannel = QChannel.channel;
+  QChat qChat = QChat.chat;
+  QUser qUser = QUser.user;
 
   public List<NotificationDirectMessageInfoDto> fetchNotificationInfoDirectMessageDtoByUserEmail(
       String email) {
@@ -35,6 +43,9 @@ public class NotificationQueryRepository {
         ))
         .from(qNotification)
         .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email), readFalse())
+        .join(qNotification.channel, qChannel)
+        .join(qNotification.chat, qChat)
+        .join(qNotification.user, qUser)
         .orderBy(qNotification.id.desc())
         .fetch();
   }
@@ -57,6 +68,10 @@ public class NotificationQueryRepository {
         ))
         .from(qNotification)
         .where(chatLogicDeleteFalse(), mentionedUserEmailEq(email), readFalse())
+        .join(qNotification.server, qServer)
+        .join(qNotification.channel, qChannel)
+        .join(qNotification.chat, qChat)
+        .join(qNotification.user, qUser)
         .orderBy(qNotification.id.desc())
         .limit(10)
         .fetch();

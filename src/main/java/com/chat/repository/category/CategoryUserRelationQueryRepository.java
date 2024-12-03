@@ -2,6 +2,7 @@ package com.chat.repository.category;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
+import com.chat.domain.category.QCategory;
 import com.chat.domain.category.QCategoryUserRelation;
 import com.chat.domain.user.User;
 import com.chat.dto.category.CategoryInfoDto;
@@ -24,6 +25,7 @@ public class CategoryUserRelationQueryRepository {
   private final JPAQueryFactory queryFactory;
   private final JdbcTemplate jdbcTemplate;
   QCategoryUserRelation qCategoryUserRelation = QCategoryUserRelation.categoryUserRelation;
+  QCategory qCategory = QCategory.category;
 
   public List<CategoryInfoDto> fetchCategoryInfoDtoListByUser(User user) {
     return queryFactory
@@ -33,6 +35,7 @@ public class CategoryUserRelationQueryRepository {
             qCategoryUserRelation.category.displayOrder,
             qCategoryUserRelation.category.server.id))
         .from(qCategoryUserRelation)
+        .join(qCategoryUserRelation.category, qCategory)
         .where(userEq(user), logicDeleteFalse())
         .fetch();
   }

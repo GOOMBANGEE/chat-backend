@@ -112,14 +112,6 @@ public class ServerUserRelationQueryRepository {
         .fetch();
   }
 
-  public List<User> fetchUserListByServer(Server server) {
-    return queryFactory
-        .select(qServerUserRelation.user)
-        .from(qServerUserRelation)
-        .where(serverEq(server), serverDeleteFalse(), logicDeleteFalse())
-        .fetch();
-  }
-
   // server참가자 id list
   public List<Long> fetchUserIdListByServer(Server server) {
     return queryFactory

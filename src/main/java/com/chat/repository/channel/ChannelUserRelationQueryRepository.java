@@ -4,7 +4,9 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 
 import com.chat.domain.channel.Channel;
 import com.chat.domain.channel.ChannelUserRelation;
+import com.chat.domain.channel.QChannel;
 import com.chat.domain.channel.QChannelUserRelation;
+import com.chat.domain.server.QServer;
 import com.chat.domain.user.QUser;
 import com.chat.domain.user.User;
 import com.chat.dto.channel.ChannelInfoDto;
@@ -14,7 +16,6 @@ import com.chat.dto.channel.QChannelInfoDto;
 import com.chat.dto.channel.QChannelUserRelationInfoDto;
 import com.chat.dto.user.QTimeoutDto;
 import com.chat.dto.user.TimeoutDto;
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.sql.PreparedStatement;
@@ -35,6 +36,9 @@ public class ChannelUserRelationQueryRepository {
   private final JPAQueryFactory queryFactory;
   private final JdbcTemplate jdbcTemplate;
   QChannelUserRelation qChannelUserRelation = QChannelUserRelation.channelUserRelation;
+  QServer qServer = QServer.server;
+  QChannel qChannel = QChannel.channel;
+  QUser qUserDirectMessage = new QUser("qUserDirectMessage");
   QUser qUser = QUser.user;
 
   public ChannelUserRelationInfoDto fetchChannelUserRelationInfoDtoByServerIdAndChannelIdAndUserEmail(
@@ -51,6 +55,8 @@ public class ChannelUserRelationQueryRepository {
               channelIdEq(channelId),
               userEmailEq(email)
           )
+          .join(qChannelUserRelation.channel, qChannel)
+          .join(qChannelUserRelation.user, qUser)
           .fetchFirst();
     } else {
       return queryFactory
@@ -66,6 +72,9 @@ public class ChannelUserRelationQueryRepository {
               channelIdEq(channelId),
               userEmailEq(email)
           )
+          .join(qChannelUserRelation.channel, qChannel)
+          .join(qChannel.server, qServer)
+          .join(qChannelUserRelation.user, qUser)
           .fetchFirst();
     }
   }
@@ -106,6 +115,7 @@ public class ChannelUserRelationQueryRepository {
             qChannelUserRelation.channel.lastMessageId))
         .from(qChannelUserRelation)
         .where(userEq(user), channelLogicDeleteFalse())
+        .join(qChannelUserRelation.channel, qChannel)
         .fetch();
   }
 
@@ -132,14 +142,8 @@ public class ChannelUserRelationQueryRepository {
             qChannelUserRelation.userDirectMessage.avatarImageSmall))
         .from(qChannelUserRelation)
         .where(userEq(user), channelLogicDeleteFalse())
-        .fetch();
-  }
-
-  public List<User> fetchUserListByChannel(Channel channel) {
-    return queryFactory
-        .select(qChannelUserRelation.user)
-        .from(qChannelUserRelation)
-        .where(channelEq(channel), channelLogicDeleteFalse())
+        .join(qChannelUserRelation.channel, qChannel)
+        .join(qChannelUserRelation.userDirectMessage, qUserDirectMessage)
         .fetch();
   }
 
@@ -167,6 +171,7 @@ public class ChannelUserRelationQueryRepository {
         .select(qChannelUserRelation.user.id)
         .from(qChannelUserRelation)
         .where(channelEq(channel), subscribeFalse(), userOnlineTrue())
+        .join(qChannelUserRelation.user, qUser)
         .fetch();
   }
 
@@ -201,13 +206,14 @@ public class ChannelUserRelationQueryRepository {
             qChannelUserRelation
         ))
         .from(qChannelUserRelation)
+        .join(qChannelUserRelation.user, qUser)
+        .join(qChannelUserRelation.channel, qChannel)
         .where(timeoutBooleanBuilder(time))
         .fetch();
   }
 
-  private BooleanBuilder timeoutBooleanBuilder(LocalDateTime time) {
-    return new BooleanBuilder()
-        .and(timeoutTrue(time))
+  private BooleanExpression timeoutBooleanBuilder(LocalDateTime time) {
+    return timeoutTrue(time)
         .and(subscribeTrue())
         .and(channelLogicDeleteFalse())
         .or(userOnlineTrue());

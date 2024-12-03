@@ -240,6 +240,7 @@ public class ChatQueryRepository {
             qChat.attachmentType))
         .from(qChat)
         .where(chatIdEq(chatId), channelEq(channel), chatDeleteFalse())
+        .join(qChat.user, qUser)
         .fetchFirst();
   }
 

@@ -1,5 +1,6 @@
 package com.chat.repository.user;
 
+import com.chat.domain.user.QUser;
 import com.chat.domain.user.QUserFriend;
 import com.chat.domain.user.User;
 import com.chat.domain.user.UserFriend;
@@ -18,6 +19,7 @@ public class UserFriendQueryRepository {
 
   private final JPAQueryFactory queryFactory;
   QUserFriend qUserFriend = QUserFriend.userFriend;
+  QUser qFriend = new QUser("qFriend");
 
   public Optional<UserFriend> fetchByUserAndFriend(User user, User friend) {
     return Optional.ofNullable(queryFactory
@@ -59,6 +61,7 @@ public class UserFriendQueryRepository {
             qUserFriend.friend.online))
         .from(qUserFriend)
         .where(userEq(user))
+        .join(qUserFriend.friend, qFriend)
         .fetch();
   }
 
