@@ -41,10 +41,10 @@ spring:
     database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
-      properties:
-        hibernate:
-          format_sql: ${SPRING_JPA_HIBERNATE_PROPERTIES_HIBERNATE_FORMAT_SQL}
-          show_sql: ${SPRING_JPA_HIBERNATE_PROPERTIES_HIBERNATE_SHOW_SQL}
+    properties:
+      hibernate:
+        show_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_SHOW_SQL}
+        format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL}
   sql:
     init:
       mode: always
@@ -78,6 +78,11 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
   refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: ${DECORATOR_DATASOURCE_P6SPY_ENABLE_LOGGING}
 
 logging:
   level:

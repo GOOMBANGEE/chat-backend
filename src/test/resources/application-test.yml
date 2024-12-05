@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
+        show_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_SHOW_SQL}
+        format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL}
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: ${DECORATOR_DATASOURCE_P6SPY_ENABLE_LOGGING}
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT}
