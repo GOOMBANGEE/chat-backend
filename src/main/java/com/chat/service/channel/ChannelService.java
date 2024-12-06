@@ -165,10 +165,6 @@ public class ChannelService {
       List<ServerRole> serverRoleUserRelation = serverRoleUserRelationQueryRepository
           .fetchServerRoleListByServerAndUser(server, user);
 
-      Long categoryId = requestDto.getCategoryId();
-      Category category = categoryRepository.findByIdAndLogicDeleteFalse(categoryId)
-          .orElseThrow(() -> new CategoryException(CATEGORY_NOT_FOUND));
-
       // 채널 생성 권한 확인
       // 서버의 주인이거나, 역할 중 하나가 채널 생성 권한이 있는지 확인
       boolean authorized = serverUserRelation.isOwner() ||
@@ -185,19 +181,41 @@ public class ChannelService {
       List<Long> allowRoleIdList = requestDto.getAllowRoleIdList();
       List<Long> allowUserIdList = requestDto.getAllowUserIdList();
 
+      Long categoryId = requestDto.getCategoryId();
       String name = requestDto.getName();
-      Double displayOrder = channelQueryRepository.fetchMaxDisplayOrderByCategory(category) * 2;
       boolean open = allowRoleIdList == null && allowUserIdList == null;
+      Double displayOrder = null;
+      Long channelId = null;
 
-      Channel channel = Channel.builder()
-          .name(name)
-          .displayOrder(displayOrder)
-          .open(open)
-          .server(server)
-          .category(category)
-          .build();
-      channelRepository.save(channel);
-      Long channelId = channel.getChannelIdForChannelCreate();
+      // 카테고리 지정 X
+      if (categoryId == null) {
+        displayOrder =
+            channelQueryRepository.fetchMaxDisplayOrderByServerAndCategoryNull(server) * 2;
+        Channel channel = Channel.builder()
+            .name(name)
+            .displayOrder(displayOrder)
+            .open(open)
+            .server(server)
+            .build();
+        channelRepository.save(channel);
+        channelId = channel.getChannelIdForChannelCreate();
+      }
+      // 카테고리 지정 O
+      if (categoryId != null) {
+        Category category = categoryRepository.findByIdAndLogicDeleteFalse(categoryId)
+            .orElseThrow(() -> new CategoryException(CATEGORY_NOT_FOUND));
+        displayOrder = channelQueryRepository.fetchMaxDisplayOrderByCategory(category) * 2;
+        Channel channel = Channel.builder()
+            .name(name)
+            .displayOrder(displayOrder)
+            .open(open)
+            .server(server)
+            .category(category)
+            .build();
+        channelRepository.save(channel);
+        channelId = channel.getChannelIdForChannelCreate();
+      }
+
       // 공개 채널인 경우 서버에 참가중인 모든 유저를 ChannelUserRelation에 추가
       if (open) {
         List<Long> userIdList = serverUserRelationQueryRepository.fetchUserIdListByServer(server);
