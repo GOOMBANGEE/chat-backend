@@ -16,6 +16,7 @@ import com.chat.dto.channel.QChannelInfoDto;
 import com.chat.dto.channel.QChannelUserRelationInfoDto;
 import com.chat.dto.user.QTimeoutDto;
 import com.chat.dto.user.TimeoutDto;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.sql.PreparedStatement;
@@ -212,11 +213,13 @@ public class ChannelUserRelationQueryRepository {
         .fetch();
   }
 
-  private BooleanExpression timeoutBooleanBuilder(LocalDateTime time) {
-    return timeoutTrue(time)
-        .and(subscribeTrue())
-        .and(channelLogicDeleteFalse())
-        .or(userOnlineTrue());
+  private BooleanBuilder timeoutBooleanBuilder(LocalDateTime time) {
+    return new BooleanBuilder()
+        .or(timeoutTrue(time)
+            .and(subscribeTrue())
+            .and(channelLogicDeleteFalse()))
+        .or(timeoutTrue(time)
+            .and(userOnlineTrue()));
   }
 
   private BooleanExpression timeoutTrue(LocalDateTime time) {
