@@ -22,6 +22,7 @@ public class ServerException extends RuntimeException {
       case "SERVER:INVALID_PATH" -> ErrorResponseDto.build(id, "올바르지 않은 경로입니다");
       case "SERVER:INVALID_TOKEN" -> ErrorResponseDto.build(id, "올바르지 않은 토큰입니다");
       case "SERVER:NO_CHANNEL_CREATE_PERMISSION" -> ErrorResponseDto.build(id, "채널 생성권한이 없습니다");
+      case "SERVER:NO_CATEGORY_CREATE_PERMISSION" -> ErrorResponseDto.build(id, "카테고리 생성권한이 없습니다");
       case "SERVER:UNSUPPORTED_FILE_TYPE" -> ErrorResponseDto.build(id, "지원하지않는 파일형식입니다");
       case "SERVER:IMAGE_SAVE_ERROR" -> ErrorResponseDto.build(id, "이미지 저장중 오류가 발생했습니다");
       default -> ErrorResponseDto.build("SERVER:UNKNOWN", "알 수 없는 오류");

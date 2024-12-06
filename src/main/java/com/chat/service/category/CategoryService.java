@@ -54,7 +54,7 @@ public class CategoryService {
   private static final String SERVER_NOT_FOUND = "SERVER:SERVER_NOT_FOUND";
   private static final String CATEGORY_NOT_FOUND = "CATEGORY:CATEGORY_NOT_FOUND";
   private static final String SERVER_NOT_PARTICIPATED = "SERVER:SERVER_NOT_PARTICIPATED";
-  private static final String NO_CHANNEL_CREATE_PERMISSION = "SERVER:NO_CHANNEL_CREATE_PERMISSION";
+  private static final String NO_CATEGORY_CREATE_PERMISSION = "SERVER:NO_CATEGORY_CREATE_PERMISSION";
 
   private final SimpMessagingTemplate messagingTemplate;
   private static final String SUB_SERVER = "/sub/server/";
@@ -88,7 +88,7 @@ public class CategoryService {
 
     // 권한이 없을 경우 예외처리
     if (!authorized) {
-      throw new ServerException(NO_CHANNEL_CREATE_PERMISSION);
+      throw new ServerException(NO_CATEGORY_CREATE_PERMISSION);
     }
 
     // 만약 역할, 유저를 지정한 경우 해당 역할, 유저에게 읽기 권한 부여

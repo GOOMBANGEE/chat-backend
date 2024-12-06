@@ -13,6 +13,7 @@ public class CategoryException extends RuntimeException {
   public ErrorResponseDto handleException() {
     return switch (this.id) {
       case "CATEGORY:CATEGORY_NOT_FOUND" -> ErrorResponseDto.build(id, "카테고리 정보가 없습니다");
+
       default -> ErrorResponseDto.build("CATEGORY:UNKNOWN", "알 수 없는 오류");
     };
   }
