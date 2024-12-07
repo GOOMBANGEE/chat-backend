@@ -29,6 +29,7 @@ import com.chat.repository.channel.ChannelUserRelationQueryRepository;
 import com.chat.repository.channel.ChannelUserRelationRepository;
 import com.chat.repository.chat.ChatQueryRepository;
 import com.chat.repository.chat.ChatRepository;
+import com.chat.repository.user.NotificationQueryRepository;
 import com.chat.repository.user.NotificationRepository;
 import com.chat.repository.user.UserRepository;
 import com.chat.service.user.CustomUserDetailsService;
@@ -79,6 +80,7 @@ public class ChatService {
   private final ChatRepository chatRepository;
   private final ChatQueryRepository chatQueryRepository;
   private final NotificationRepository notificationRepository;
+  private final NotificationQueryRepository notificationQueryRepository;
   private final UserRepository userRepository;
 
   private static final String USER_UNREGISTERED = "USER:USER_UNREGISTERED";
@@ -167,6 +169,12 @@ public class ChatService {
     channelUserRelation.updateLastReadMessageId(chatId);
     channelRepository.save(channel);
     channelUserRelationRepository.save(channelUserRelation);
+
+    // dm channel인 경우, notification read처리
+    if (channel.isDirectMessageChannel()) {
+      // 채널, 유저에 해당하는 notification을 모두 찾아서 read 처리
+      notificationQueryRepository.bulkUpdateRead(channelId, email);
+    }
 
     // stomp pub
     String channelUrl = SUB_CHANNEL + channelId;
