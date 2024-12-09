@@ -1,0 +1,96 @@
+services:
+  registry:
+    image: registry
+    container_name: goomba-registry
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./registry:/var/lib/registry
+    networks:
+      - goomba.org
+
+  mysql:
+    image: mysql:latest
+    container_name: goomba-mysql
+    env_file:
+      - ./env/mysql.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci"
+    ]
+    networks:
+      - goomba.org
+
+  jenkins:
+    image: jenkins-custom
+    user: root
+    container_name: goomba-jenkins
+    environment:
+      TZ: Asia/Seoul
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - ./:/var/
+      - ./jenkins:/var/jenkins_home
+      - ./nginx/html:/var/www/html
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - goomba.org
+
+  nginx:
+    image: nginx
+    container_name: goomba-nginx
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/html:/var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - goomba.org
+    depends_on:
+      - mysql
+      - jenkins
+
+
+  chat1:
+    image: localhost:5000/chat-backend:latest
+    container_name: goomba-chat-1
+    env_file:
+      - ./env/chat.env
+    volumes:
+      - ./nginx/html/chat/cache/server:/server
+      - ./nginx/html/chat/cache/chat:/chat
+      - ./nginx/html/chat/cache/user:/user
+    ports:
+      - "8081:8081"
+      - "8000:8000" # monitoring
+    networks:
+      - goomba.org
+
+  chat2:
+    image: localhost:5000/chat-backend:latest
+    container_name: goomba-chat-2
+    env_file:
+      - ./env/chat.env
+    volumes:
+      - ./nginx/html/chat/cache:/cache
+    environment:
+      - SERVER_PORT=8082
+      - MANAGEMENT_SERVER_PORT=8000
+    ports:
+      - "8082:8082"
+      - "8000:8000" # monitoring
+    networks:
+      - goomba.org
+
+networks:
+  goomba.org:
+    driver: bridge
